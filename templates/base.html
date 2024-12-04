@@ -12,7 +12,9 @@
 <body>
     <header class="app-header">
         <div class="logo-container">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jasper AI Logo" class="app-logo">
+            <a href="{{ url_for('main.chat') }}">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jasper AI Logo" class="app-logo">
+            </a>
         </div>
     </header>
     <main>
