@@ -59,8 +59,7 @@
     <div id="knowledge" class="tab-content">
         <h3>Knowledge Base</h3>
         <div class="knowledge-actions">
-            <button class="btn" onclick="showAddKnowledgeForm()">Add New Entry</button>
-            <form id="uploadForm" class="upload-form" style="margin-top: 1rem;">
+            <form id="uploadForm" class="upload-form">
                 <input type="file" id="pdfFile" accept=".pdf" class="file-input">
                 <button type="button" class="btn" onclick="uploadPDF()">Upload PDF</button>
             </form>
@@ -81,7 +80,6 @@
                     <td>{{ entry.created_at.strftime('%Y-%m-%d') }}</td>
                     <td>{{ entry.updated_at.strftime('%Y-%m-%d') }}</td>
                     <td>
-                        <button class="btn-small" onclick="editEntry({{ entry.id }})">Edit</button>
                         <button class="btn-small delete" onclick="deleteEntry({{ entry.id }})">Delete</button>
                     </td>
                 </tr>
