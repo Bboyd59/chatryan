@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
-from models import Chat, Message, User, db
+from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
 
 main_bp = Blueprint('main', __name__)
@@ -46,4 +46,5 @@ def admin():
     
     users = User.query.all()
     chats = Chat.query.all()
-    return render_template('admin.html', users=users, chats=chats)
+    knowledge_base = KnowledgeBase.query.order_by(KnowledgeBase.updated_at.desc()).all()
+    return render_template('admin.html', users=users, chats=chats, knowledge_base=knowledge_base)
