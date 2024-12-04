@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="messages">
+        <!-- Messages will be dynamically added here -->
+    </div>
+    <form class="chat-form input-container">
+        <input type="text" class="chat-input" placeholder="Type your message..." autocomplete="off">
+    </form>
+</div>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}
