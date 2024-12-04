@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Only initialize chat functionality if we're on the chat page
     const messageContainer = document.querySelector('.messages');
+    if (!messageContainer) return; // Exit if not on chat page
+    
     const chatForm = document.querySelector('.chat-form');
     const chatInput = document.querySelector('.chat-input');
 

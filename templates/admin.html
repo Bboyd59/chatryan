@@ -46,10 +46,22 @@
             </thead>
             <tbody>
                 {% for chat in chats %}
-                <tr>
+                <tr class="chat-row" onclick="toggleChatMessages({{ chat.id }})">
                     <td>{{ chat.user.username }}</td>
                     <td>{{ chat.messages|length }}</td>
                     <td>{{ chat.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                </tr>
+                <tr id="chat-messages-{{ chat.id }}" class="chat-messages" style="display: none;">
+                    <td colspan="3">
+                        <div class="chat-messages-container">
+                            {% for message in chat.messages %}
+                            <div class="chat-message {% if message.is_user %}user-message{% else %}ai-message{% endif %}">
+                                <span class="message-timestamp">{{ message.created_at.strftime('%H:%M:%S') }}</span>
+                                <div class="message-content">{{ message.content }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -90,6 +102,14 @@
 </div>
 
 <script>
+function toggleChatMessages(chatId) {
+    const messagesRow = document.getElementById(`chat-messages-${chatId}`);
+    if (messagesRow) {
+        const isVisible = messagesRow.style.display !== 'none';
+        messagesRow.style.display = isVisible ? 'none' : 'table-row';
+    }
+}
+
 function openTab(evt, tabName) {
     var i, tabContent, tabBtns;
     
