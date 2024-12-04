@@ -4,7 +4,14 @@ import os
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
-from fal import FAL_KEY
+import asyncio
+from fal_rest import client as fal_client
+from flask import current_app
+
+# Initialize fal.ai client
+FAL_KEY = os.getenv('FAL_KEY')
+if FAL_KEY:
+    fal_client.api_key = FAL_KEY
 
 main_bp = Blueprint('main', __name__)
 
@@ -15,7 +22,7 @@ def chat():
 
 @main_bp.route('/api/chat', methods=['POST'])
 @login_required
-def process_message():
+async def process_message():
     data = request.json
     message = data.get('message')
     is_image_mode = data.get('isImageMode', False)
@@ -33,21 +40,18 @@ def process_message():
     
     if is_image_mode:
         try:
-            # Initialize fal client
-            import fal
-            fal.init(FAL_KEY)
-            
             # Call fal.ai API for image generation
-            result = fal.subscribe("fal-ai/flux-pro/v1.1-ultra", {
+            result = await fal_client.invoke("fal-ai/flux-pro/v1.1-ultra", {
                 "input": {
                     "prompt": message,
                     "num_images": 1,
                     "enable_safety_checker": True,
+                    "safety_tolerance": "2"
                 }
             })
             
             # Get the image URL from the response
-            image_url = result.data['images'][0]['url']
+            image_url = result['images'][0]['url']
             response = f"![Generated Image]({image_url})"
         except Exception as e:
             response = f"Sorry, there was an error generating the image: {str(e)}"
