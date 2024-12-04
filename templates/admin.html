@@ -60,6 +60,10 @@
         <h3>Knowledge Base</h3>
         <div class="knowledge-actions">
             <button class="btn" onclick="showAddKnowledgeForm()">Add New Entry</button>
+            <form id="uploadForm" class="upload-form" style="margin-top: 1rem;">
+                <input type="file" id="pdfFile" accept=".pdf" class="file-input">
+                <button type="button" class="btn" onclick="uploadPDF()">Upload PDF</button>
+            </form>
         </div>
         <table>
             <thead>
@@ -119,6 +123,43 @@ function deleteEntry(id) {
     if (confirm("Are you sure you want to delete this entry?")) {
         // TODO: Implement delete functionality
         alert("Delete functionality will be implemented for entry " + id);
+    }
+}
+
+async function uploadPDF() {
+    const fileInput = document.getElementById('pdfFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a PDF file first');
+        return;
+    }
+    
+    if (!file.name.endsWith('.pdf')) {
+        alert('Please select a PDF file');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('/admin/upload-knowledge', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('PDF uploaded and processed successfully');
+            location.reload(); // Refresh to show new entry
+        } else {
+            alert(data.error || 'Upload failed');
+        }
+    } catch (error) {
+        alert('Error uploading file');
+        console.error(error);
     }
 }
 </script>
