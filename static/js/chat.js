@@ -5,6 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const chatForm = document.querySelector('.chat-form');
     const chatInput = document.querySelector('.chat-input');
+    const imageToggle = document.querySelector('.image-toggle');
+    let isImageMode = false;
+
+    // Toggle image generation mode
+    imageToggle?.addEventListener('click', () => {
+        isImageMode = !isImageMode;
+        imageToggle.classList.toggle('active');
+        chatInput.placeholder = isImageMode ? "Describe the image you want to generate..." : "Message Jasper AI...";
+    });
 
     // Auto-resize textarea
     function adjustTextareaHeight() {
@@ -90,7 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ message })
+                body: JSON.stringify({ 
+                    message,
+                    isImageMode
+                })
             });
 
             if (!response.ok) {

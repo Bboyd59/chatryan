@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, jsonify, request
 import PyPDF2
+import os
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
+from fal import FAL_KEY
 
 main_bp = Blueprint('main', __name__)
 
@@ -16,6 +18,7 @@ def chat():
 def process_message():
     data = request.json
     message = data.get('message')
+    is_image_mode = data.get('isImageMode', False)
     
     # Create new chat if needed
     chat = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).first()
@@ -28,28 +31,49 @@ def process_message():
     user_message = Message(chat_id=chat.id, content=message, is_user=True)
     db.session.add(user_message)
     
-    # Search knowledge base first
-    kb_entries = KnowledgeBase.query.all()
-    relevant_info = ""
-    
-    for entry in kb_entries:
-        if any(keyword.lower() in entry.content.lower() for keyword in message.split()):
-            relevant_info += f"\n\nRelevant information from knowledge base: {entry.content}"
-    
-    # Get Claude's response with context from knowledge base
-    if relevant_info:
-        context = f"Please use this additional context while answering: {relevant_info}\n\nUser question: {message}"
-        claude_response = get_claude_response(context)
+    if is_image_mode:
+        try:
+            # Initialize fal client
+            import fal
+            fal.init(FAL_KEY)
+            
+            # Call fal.ai API for image generation
+            result = fal.subscribe("fal-ai/flux-pro/v1.1-ultra", {
+                "input": {
+                    "prompt": message,
+                    "num_images": 1,
+                    "enable_safety_checker": True,
+                }
+            })
+            
+            # Get the image URL from the response
+            image_url = result.data['images'][0]['url']
+            response = f"![Generated Image]({image_url})"
+        except Exception as e:
+            response = f"Sorry, there was an error generating the image: {str(e)}"
     else:
-        claude_response = get_claude_response(message)
+        # Regular chat mode - search knowledge base first
+        kb_entries = KnowledgeBase.query.all()
+        relevant_info = ""
+        
+        for entry in kb_entries:
+            if any(keyword.lower() in entry.content.lower() for keyword in message.split()):
+                relevant_info += f"\n\nRelevant information from knowledge base: {entry.content}"
+        
+        # Get Claude's response with context from knowledge base
+        if relevant_info:
+            context = f"Please use this additional context while answering: {relevant_info}\n\nUser question: {message}"
+            response = get_claude_response(context)
+        else:
+            response = get_claude_response(message)
     
-    ai_message = Message(chat_id=chat.id, content=claude_response, is_user=False)
+    ai_message = Message(chat_id=chat.id, content=response, is_user=False)
     db.session.add(ai_message)
     
     db.session.commit()
     
     return jsonify({
-        'response': claude_response
+        'response': response
     })
 
 @main_bp.route('/admin/upload-knowledge', methods=['POST'])
