@@ -56,22 +56,30 @@ body {
     flex: 1;
     overflow-y: auto;
     padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .message {
-    padding: 1.5rem;
-    margin: 1rem auto;
-    max-width: 768px;
+    padding: 1rem;
+    margin: 0.5rem;
+    max-width: 80%;
     animation: fadeIn 0.3s ease-in;
     line-height: 1.6;
+    border-radius: 1rem;
 }
 
 .user-message {
-    background-color: transparent;
+    background-color: var(--accent);
+    color: white;
+    align-self: flex-end;
+    margin-left: 20%;
 }
 
 .ai-message {
-    background-color: rgba(247,247,248,0.1);
+    background-color: var(--bg-secondary);
+    align-self: flex-start;
+    margin-right: 20%;
 }
 
 .input-container {
