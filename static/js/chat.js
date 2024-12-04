@@ -4,10 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.querySelector('.chat-input');
 
     // Auto-resize textarea
-    chatInput.addEventListener('input', () => {
+    function adjustTextareaHeight() {
         chatInput.style.height = 'auto';
-        chatInput.style.height = Math.min(chatInput.scrollHeight, 200) + 'px';
-    });
+        const newHeight = Math.min(chatInput.scrollHeight, 200);
+        chatInput.style.height = `${Math.max(45, newHeight)}px`; // Minimum height of 45px
+    }
+
+    chatInput.addEventListener('input', adjustTextareaHeight);
 
     // Handle Enter key
     chatInput.addEventListener('keydown', (e) => {
@@ -38,12 +41,26 @@ document.addEventListener('DOMContentLoaded', () => {
             messageDiv.textContent = content;
         } else {
             // Parse markdown for AI responses
-            messageDiv.innerHTML = marked.parse(content);
+            try {
+                messageDiv.innerHTML = marked.parse(content, {
+                    breaks: true,
+                    gfm: true,
+                    sanitize: false
+                });
+            } catch (error) {
+                console.error('Markdown parsing error:', error);
+                messageDiv.textContent = content;
+            }
         }
         
         messageContainer.appendChild(messageDiv);
         messageContainer.scrollTop = messageContainer.scrollHeight;
-        chatInput.style.height = '52px'; // Reset height after sending
+        
+        // Reset input height after sending
+        if (isUser) {
+            chatInput.style.height = '45px';
+            adjustTextareaHeight();
+        }
     }
 
     chatForm.addEventListener('submit', async (e) => {
@@ -52,9 +69,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = chatInput.value.trim();
         if (!message) return;
 
+        // Clear input and reset height
+        chatInput.value = '';
+        chatInput.style.height = '45px';
+        
         // Add user message
         appendMessage(message, true);
-        chatInput.value = '';
 
         // Add typing indicator
         const typingIndicator = createTypingIndicator();
@@ -70,6 +90,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ message })
             });
 
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
             // Remove typing indicator
             typingIndicator.remove();
 
@@ -82,11 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             appendMessage('Sorry, there was an error processing your message.', false);
         }
     });
+
+    // Initial height adjustment
+    adjustTextareaHeight();
 });
-    // Clear chat functionality
-    document.getElementById('clearChat').addEventListener('click', () => {
-        if (confirm('Are you sure you want to clear the chat history?')) {
-            const messageContainer = document.querySelector('.messages');
-            messageContainer.innerHTML = '';
-        }
-    });
