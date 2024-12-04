@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    <header class="app-header">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jasper AI Logo" class="app-logo">
+        </div>
+    </header>
     <main>
         {% with messages = get_flashed_messages() %}
             {% if messages %}
