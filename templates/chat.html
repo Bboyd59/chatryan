@@ -5,9 +5,12 @@
     <div class="messages">
         <!-- Messages will be dynamically added here -->
     </div>
-    <form class="chat-form input-container">
-        <input type="text" class="chat-input" placeholder="Type your message..." autocomplete="off">
-    </form>
+    <div class="input-container">
+        <form class="chat-form">
+            <textarea class="chat-input" placeholder="Message ChatGPT..." rows="1" autocomplete="off"></textarea>
+            <button type="submit" style="display: none;"></button>
+        </form>
+    </div>
 </div>
 <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 {% endblock %}
