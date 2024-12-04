@@ -83,3 +83,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+    // Clear chat functionality
+    document.getElementById('clearChat').addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear the chat history?')) {
+            const messageContainer = document.querySelector('.messages');
+            messageContainer.innerHTML = '';
+        }
+    });

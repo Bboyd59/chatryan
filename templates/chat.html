@@ -2,6 +2,12 @@
 
 {% block content %}
 <div class="chat-container">
+    <div class="chat-header">
+        <div class="chat-actions">
+            <button class="btn-icon" id="clearChat">Clear Chat</button>
+            <a href="{{ url_for('auth.logout') }}" class="btn-icon">Logout</a>
+        </div>
+    </div>
     <div class="messages">
         <!-- Messages will be dynamically added here -->
     </div>
