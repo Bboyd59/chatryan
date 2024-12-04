@@ -336,17 +336,17 @@ body {
 }
 
 .message h1, .message h2, .message h3 {
-    margin: 1rem 0;
+    margin: 0.5rem 0;
     font-weight: 600;
 }
 
 .message ul, .message ol {
-    margin: 1rem 0;
-    padding-left: 2rem;
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
 }
 
 .message p {
-    margin: 0.5rem 0;
+    margin: 0.25rem 0;
 }
 
 .message code {
@@ -358,9 +358,10 @@ body {
 
 .message pre {
     background-color: rgba(0, 0, 0, 0.1);
-    padding: 1rem;
+    padding: 0.5rem;
     border-radius: 8px;
     overflow-x: auto;
+    margin: 0.5rem 0;
 }
 
 .message pre code {
