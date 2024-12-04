@@ -300,3 +300,77 @@ body {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+/* Loading animation */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    margin: 0.5rem;
+    background-color: var(--bg-secondary);
+    border-radius: 1rem;
+    align-self: flex-start;
+    margin-right: 20%;
+}
+
+.typing-indicator span {
+    height: 8px;
+    width: 8px;
+    margin: 0 2px;
+    background-color: var(--text-secondary);
+    border-radius: 50%;
+    display: inline-block;
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+/* Markdown styles */
+.message {
+    white-space: pre-wrap;
+}
+
+.message h1, .message h2, .message h3 {
+    margin: 1rem 0;
+    font-weight: 600;
+}
+
+.message ul, .message ol {
+    margin: 1rem 0;
+    padding-left: 2rem;
+}
+
+.message p {
+    margin: 0.5rem 0;
+}
+
+.message code {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.message pre {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.message pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.message blockquote {
+    border-left: 4px solid var(--accent);
+    margin: 1rem 0;
+    padding-left: 1rem;
+    color: var(--text-secondary);
+}

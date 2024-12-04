@@ -19,10 +19,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    function createTypingIndicator() {
+        const indicator = document.createElement('div');
+        indicator.className = 'typing-indicator';
+        indicator.innerHTML = `
+            <span></span>
+            <span></span>
+            <span></span>
+        `;
+        return indicator;
+    }
+
     function appendMessage(content, isUser) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
-        messageDiv.textContent = content;
+        
+        if (isUser) {
+            messageDiv.textContent = content;
+        } else {
+            // Parse markdown for AI responses
+            messageDiv.innerHTML = marked.parse(content);
+        }
+        
         messageContainer.appendChild(messageDiv);
         messageContainer.scrollTop = messageContainer.scrollHeight;
         chatInput.style.height = '52px'; // Reset height after sending
@@ -38,6 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
         appendMessage(message, true);
         chatInput.value = '';
 
+        // Add typing indicator
+        const typingIndicator = createTypingIndicator();
+        messageContainer.appendChild(typingIndicator);
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
@@ -47,10 +70,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ message })
             });
 
+            // Remove typing indicator
+            typingIndicator.remove();
+
             const data = await response.json();
             appendMessage(data.response, false);
         } catch (error) {
             console.error('Error:', error);
+            // Remove typing indicator
+            typingIndicator.remove();
             appendMessage('Sorry, there was an error processing your message.', false);
         }
     });
