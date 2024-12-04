@@ -14,6 +14,16 @@
         <div class="logo-container">
             <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jasper AI Logo" class="app-logo">
         </div>
+        {% if request.endpoint == 'main.chat' %}
+        <div class="header-actions">
+            <button class="icon-button" id="clearChat" title="Clear Chat">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                </svg>
+            </button>
+            <a href="{{ url_for('auth.logout') }}" class="btn-primary">Logout</a>
+        </div>
+        {% endif %}
     </header>
     <main>
         {% with messages = get_flashed_messages() %}

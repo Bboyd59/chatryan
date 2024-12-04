@@ -98,37 +98,51 @@ body {
 
 .input-container {
     position: sticky;
-.chat-header {
-    position: sticky;
-    top: 0;
-    background-color: var(--bg-primary);
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    z-index: 10;
-}
-
-.chat-actions {
+.app-header {
     display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
 }
 
-.btn-icon {
-    padding: 0.5rem 1rem;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
-    color: var(--text-primary);
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    color: var(--text-secondary);
     cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 0.5rem;
+}
+
+.icon-button:hover {
+    background-color: var(--bg-secondary);
+    color: var(--accent);
+}
+
+.btn-primary {
+    padding: 0.5rem 1.5rem;
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 2rem;
     text-decoration: none;
     font-size: 0.875rem;
     transition: all 0.2s ease;
+    font-weight: 500;
 }
 
-.btn-icon:hover {
-    background-color: var(--accent);
-    color: white;
-    border-color: var(--accent);
+.btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
 }
     bottom: 0;
     background-color: var(--bg-primary);
