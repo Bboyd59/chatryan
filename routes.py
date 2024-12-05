@@ -46,7 +46,7 @@ async def process_message():
             fal.key = FAL_KEY
             
             # Use the fal.ai client to generate image
-            result = await fal.run(
+            result = await fal.subscribe(
                 "fal-ai/flux-pro/v1.1-ultra",
                 {
                     "input": {
@@ -55,7 +55,9 @@ async def process_message():
                         "enable_safety_checker": True,
                         "safety_tolerance": "2",
                         "aspect_ratio": "16:9"
-                    }
+                    },
+                    "logs": True,
+                    "onQueueUpdate": lambda update: print(f"Generation status: {update.status}")
                 }
             )
             
