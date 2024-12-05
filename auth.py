@@ -16,7 +16,8 @@ def login():
         
         if user and user.check_password(password):
             login_user(user)
-            return redirect(url_for('main.chat'))
+            next_page = request.args.get('next')
+            return redirect(next_page if next_page else url_for('main.chat'))
         flash('Invalid email or password')
     
     return render_template('login.html')
