@@ -12,8 +12,4 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "anthropic>=0.40.0",
     "pypdf2>=3.0.1",
-    "aioflask>=0.4.0",
-    "fal>=1.5.16",
-    "httpx>=0.28.0",
-    "sseclient-py>=1.8.0",
 ]
