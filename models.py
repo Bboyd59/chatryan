@@ -20,7 +20,7 @@ class User(UserMixin, db.Model):
 
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     messages = db.relationship('Message', backref='chat', lazy=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

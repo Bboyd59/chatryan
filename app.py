@@ -24,6 +24,11 @@ def create_app():
     app.config['SESSION_TYPE'] = 'filesystem'
     app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minutes
     app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['REMEMBER_COOKIE_DURATION'] = 1800
+    app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+    app.config['REMEMBER_COOKIE_SECURE'] = False  # Set to True in production
+    app.config['LOGIN_DISABLED'] = True  # Disable login requirement for non-admin routes
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_recycle": 300,
@@ -32,7 +37,7 @@ def create_app():
 
     db.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
+    login_manager.login_view = 'auth.admin_login'
 
     with app.app_context():
         from models import User

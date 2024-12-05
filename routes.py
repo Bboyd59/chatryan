@@ -55,21 +55,24 @@ FAL_KEY = os.getenv('FAL_KEY')
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
-@login_required
 def chat():
     return render_template('chat.html')
 
 @main_bp.route('/api/chat', methods=['POST'])
-@login_required
 async def process_message():
     data = request.json
     message = data.get('message')
     is_image_mode = data.get('isImageMode', False)
     
-    # Create new chat if needed
-    chat = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).first()
-    if not chat:
-        chat = Chat(user_id=current_user.id)
+    # Create anonymous chat if user is not logged in
+    if current_user.is_authenticated:
+        chat = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).first()
+        if not chat:
+            chat = Chat(user_id=current_user.id)
+            db.session.add(chat)
+            db.session.commit()
+    else:
+        chat = Chat(user_id=None)
         db.session.add(chat)
         db.session.commit()
     
