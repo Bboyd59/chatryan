@@ -12,6 +12,14 @@ class Base(DeclarativeBase):
 
 db = SQLAlchemy(model_class=Base)
 login_manager = LoginManager()
+from flask_login import AnonymousUserMixin
+
+class Anonymous(AnonymousUserMixin):
+    @property
+    def is_admin(self):
+        return False
+
+login_manager.anonymous_user = Anonymous
 
 @login_manager.user_loader
 def load_user(id):

@@ -232,8 +232,8 @@ def upload_knowledge():
 @main_bp.route('/admin')
 @login_required
 def admin():
-    if not current_user.is_admin:
-        return render_template('error.html', message="Access denied"), 403
+    if not current_user.is_authenticated or not current_user.is_admin:
+        return redirect(url_for('auth.admin_login'))
     
     users = User.query.all()
     chats = Chat.query.all()
