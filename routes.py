@@ -42,7 +42,7 @@ async def process_message():
             if not FAL_KEY:
                 raise Exception("FAL_KEY not configured")
             
-            from fal.api import fal
+            from fal import client as fal
             fal.key = FAL_KEY
             
             # Use the fal.ai client to generate image
@@ -60,7 +60,7 @@ async def process_message():
             )
             
             # Get the image URL from the response
-            image_url = result['images'][0]['url']
+            image_url = result.data['images'][0]['url']
             response = f"![Generated Image]({image_url})"
         except Exception as e:
             response = f"Sorry, there was an error generating the image: {str(e)}"

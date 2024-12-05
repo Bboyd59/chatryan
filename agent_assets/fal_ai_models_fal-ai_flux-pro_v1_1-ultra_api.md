@@ -8,8 +8,6 @@ URL: https://fal.ai/models/fal-ai/flux-pro/v1.1-ultra/api
 
 fal-ai/flux-pro/v1.1-ultra
 
-FLUX 1.1 \[pro\] (ultra)
-
 FLUX1.1 \[pro\] ultra is the newest version of FLUX1.1 \[pro\], maintaining professional-grade image quality while delivering up to 2K resolution with improved photo realism.
 
 Inference
@@ -456,24 +454,24 @@ text to image\\
 \\
 fooocus\\
 \\
-upscaling](/models/fal-ai/fooocus/upscale-or-vary) [fal-ai/flux-subject\\
+upscaling](/models/fal-ai/fooocus/upscale-or-vary) [fal-ai/fast-sdxl-controlnet-canny\\
 \\
 text-to-image\\
 \\
-Super fast endpoint for the FLUX.1 \[schnell\] model with subject input capabilities, enabling rapid and high-quality image generation for personalization, specific styles, brand identities, and product-specific outputs.\\
-\\
-flux\\
-\\
-schnell\\
-\\
-stylization](/models/fal-ai/flux-subject) [fal-ai/fast-lcm-diffusion\\
-\\
-text-to-image\\
-\\
-Run SDXL at the speed of light\\
-\\
-lcm\\
+Generate Images with ControlNet.\\
 \\
 stable diffusion\\
 \\
-turbo](/models/fal-ai/fast-lcm-diffusion)
+controlnet\\
+\\
+text to image](/models/fal-ai/fast-sdxl-controlnet-canny) [fal-ai/recraft-v3\\
+\\
+text-to-image\\
+\\
+Recraft V3 is a text-to-image model with the ability to generate long texts, vector art, images in brand style, and much more. As of today, it is SOTA in image generation, proven by Hugging Face’s industry-leading Text-to-Image Benchmark by Artificial Analysis.\\
+\\
+image generation\\
+\\
+vector art\\
+\\
+typograph](/models/fal-ai/recraft-v3)
