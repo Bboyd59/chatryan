@@ -21,10 +21,11 @@ def login():
         if not user.check_password(password):
             flash('Invalid password')
             return render_template('login.html')
-        login_user(user)
+        login_user(user, remember=True)
         next_page = request.args.get('next')
         if not next_page or urlparse(next_page).netloc != '':
             next_page = url_for('main.chat')
+        print(f"Redirecting to: {next_page}")  # Debug print
         return redirect(next_page)
     
     return render_template('login.html')
