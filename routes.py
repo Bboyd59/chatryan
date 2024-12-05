@@ -9,11 +9,6 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 @login_required
 def index():
-    return redirect(url_for('main.chat'))
-
-@main_bp.route('/chat')
-@login_required
-def chat():
     return render_template('chat.html')
 
 @main_bp.route('/api/chat', methods=['POST'])
