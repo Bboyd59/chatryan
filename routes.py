@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
 import asyncio
-from fal_rest import client as fal_client
+from fal.rest import client as fal_client
 from flask import current_app
 
 # Initialize fal.ai client
@@ -41,13 +41,21 @@ async def process_message():
     if is_image_mode:
         try:
             # Call fal.ai API for image generation
-            result = await fal_client.invoke("fal-ai/flux-pro/v1.1-ultra", {
+            if not fal_client:
+                raise Exception("FAL_KEY not configured")
+                
+            result = await fal_client.queue.submit("fal-ai/flux-pro/v1.1-ultra", {
                 "input": {
                     "prompt": message,
                     "num_images": 1,
                     "enable_safety_checker": True,
                     "safety_tolerance": "2"
                 }
+            })
+            
+            # Wait for the image to be generated
+            result = await fal_client.queue.result("fal-ai/flux-pro/v1.1-ultra", {
+                "requestId": result['request_id']
             })
             
             # Get the image URL from the response

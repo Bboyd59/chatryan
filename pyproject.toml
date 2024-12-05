@@ -13,4 +13,5 @@ dependencies = [
     "anthropic>=0.40.0",
     "pypdf2>=3.0.1",
     "aioflask>=0.4.0",
+    "fal>=1.5.16",
 ]
