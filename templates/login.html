@@ -3,13 +3,6 @@
 {% block content %}
 <div class="auth-form">
     <h2>Login</h2>
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-danger">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
     <form method="POST">
         <div class="form-group">
             <label for="email">Email</label>
