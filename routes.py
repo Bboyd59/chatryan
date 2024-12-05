@@ -55,11 +55,8 @@ FAL_KEY = os.getenv('FAL_KEY')
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
-@main_bp.route('/chat')
 @login_required
 def chat():
-    if not current_user.is_authenticated:
-        return redirect(url_for('auth.login'))
     return render_template('chat.html')
 
 @main_bp.route('/api/chat', methods=['POST'])
