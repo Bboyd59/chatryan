@@ -5,13 +5,11 @@ from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
 import asyncio
-from fal.rest import client as fal_client
 from flask import current_app
+import httpx
 
-# Initialize fal.ai client
+# Initialize fal.ai configuration
 FAL_KEY = os.getenv('FAL_KEY')
-if FAL_KEY:
-    fal_client.api_key = FAL_KEY
 
 main_bp = Blueprint('main', __name__)
 
@@ -41,25 +39,35 @@ async def process_message():
     if is_image_mode:
         try:
             # Call fal.ai API for image generation
-            if not fal_client:
+            if not FAL_KEY:
                 raise Exception("FAL_KEY not configured")
+            
+            async with httpx.AsyncClient() as client:
+                # Submit the generation request
+                headers = {"Authorization": f"Key {FAL_KEY}", "Content-Type": "application/json"}
+                submit_response = await client.post(
+                    "https://rest.fal.ai/v1/models/fal-ai/flux-pro/v1.1-ultra",
+                    json={
+                        "input": {
+                            "prompt": message,
+                            "num_images": 1,
+                            "enable_safety_checker": True,
+                            "safety_tolerance": "2"
+                        }
+                    },
+                    headers=headers
+                )
+                submit_data = submit_response.json()
                 
-            result = await fal_client.queue.submit("fal-ai/flux-pro/v1.1-ultra", {
-                "input": {
-                    "prompt": message,
-                    "num_images": 1,
-                    "enable_safety_checker": True,
-                    "safety_tolerance": "2"
-                }
-            })
-            
-            # Wait for the image to be generated
-            result = await fal_client.queue.result("fal-ai/flux-pro/v1.1-ultra", {
-                "requestId": result['request_id']
-            })
-            
-            # Get the image URL from the response
-            image_url = result['images'][0]['url']
+                # Get the result
+                result_response = await client.get(
+                    f"https://rest.fal.ai/v1/models/fal-ai/flux-pro/v1.1-ultra/results/{submit_data['request_id']}",
+                    headers=headers
+                )
+                result = result_response.json()
+                
+                # Get the image URL from the response
+                image_url = result['images'][0]['url']
             response = f"![Generated Image]({image_url})"
         except Exception as e:
             response = f"Sorry, there was an error generating the image: {str(e)}"
