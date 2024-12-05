@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify, request, redirect, url_for
+from flask import Blueprint, render_template, jsonify, request
 import PyPDF2
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
@@ -8,7 +8,7 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 @login_required
-def index():
+def chat():
     return render_template('chat.html')
 
 @main_bp.route('/api/chat', methods=['POST'])
