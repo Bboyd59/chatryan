@@ -54,8 +54,11 @@ async def process_message():
                         "num_images": 1,
                         "enable_safety_checker": True,
                         "safety_tolerance": "2",
-                        "aspect_ratio": "16:9"
-                    }
+                        "aspect_ratio": "16:9",
+                        "sync_mode": True
+                    },
+                    "logs": True,
+                    "onQueueUpdate": lambda update: print(f"Generation status: {update.status}")
                 }
             )
             
