@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, render_template, jsonify, request, redirect, url_for
 import PyPDF2
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
@@ -7,6 +7,11 @@ from claude_api import get_claude_response
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
+@login_required
+def index():
+    return redirect(url_for('main.chat'))
+
+@main_bp.route('/chat')
 @login_required
 def chat():
     return render_template('chat.html')
