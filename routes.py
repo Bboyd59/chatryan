@@ -79,28 +79,40 @@ async def process_message():
     db.session.commit()
     
     if is_image_mode:
+        error_msg = None
         try:
             # Call fal.ai API for image generation
             if not FAL_KEY:
-                raise Exception("FAL_KEY not configured")
+                raise ValueError("FAL_KEY environment variable is not configured")
             
-            import fal
-            fal.key = FAL_KEY
+            from fal import FalClient
+            fal = FalClient(FAL_KEY)
             
-            # Use the fal.ai client to generate image
-            result = await fal.run(
-                "fal-ai/flux-pro/v1.1-ultra",
-                {
-                    "prompt": message,
-                    "num_images": 1,
-                    "enable_safety_checker": True,
-                    "safety_tolerance": "2",
-                    "aspect_ratio": "16:9"
-                }
-            )
+            @retry_with_exponential_backoff(max_retries=3, initial_delay=1, max_delay=10)
+            async def generate_image(prompt):
+                try:
+                    # Use the fal.ai client to generate image with better error handling
+                    result = await fal.submit(
+                        model="fal-ai/flux-pro/v1.1-ultra",
+                        input_data={
+                            "prompt": prompt,
+                            "num_images": 1,
+                            "enable_safety_checker": True,
+                            "safety_tolerance": "2",
+                            "aspect_ratio": "16:9"
+                        }
+                    )
+                    
+                    if not result or not result.data or 'images' not in result.data:
+                        raise ValueError("Invalid response format from image generation API")
+                    
+                    return result.data['images'][0]['url']
+                except Exception as e:
+                    current_app.logger.error(f"Error generating image: {str(e)}")
+                    raise
             
-            # Get the image URL from the response
-            image_url = result.data['images'][0]['url']
+            # Generate image with retry mechanism
+            image_url = await generate_image(message)
             response = f"![Generated Image]({image_url})"
             
             # Save AI response
@@ -109,19 +121,36 @@ async def process_message():
             db.session.commit()
             
             return jsonify({
-                'response': response
+                'response': response,
+                'success': True
             })
             
+        except ValueError as ve:
+            error_msg = f"Configuration error: {str(ve)}"
+            current_app.logger.error(f"Configuration error in image generation: {str(ve)}")
+        except fal.exceptions.AuthenticationError:
+            error_msg = "Authentication failed. Please check your FAL API key."
+            current_app.logger.error("FAL API authentication failed")
+        except fal.exceptions.RateLimitError:
+            error_msg = "Rate limit exceeded. Please try again later."
+            current_app.logger.error("FAL API rate limit exceeded")
+        except fal.exceptions.ServerError:
+            error_msg = "The image generation service is temporarily unavailable. Please try again later."
+            current_app.logger.error("FAL API server error")
         except Exception as e:
-            error_msg = f"Sorry, there was an error generating the image: {str(e)}"
-            
+            error_msg = "An unexpected error occurred while generating the image. Please try again."
+            current_app.logger.error(f"Unexpected error in image generation: {str(e)}")
+        
+        if error_msg:
             # Save error message
             ai_message = Message(chat_id=chat.id, content=error_msg, is_user=False)
             db.session.add(ai_message)
             db.session.commit()
             
             return jsonify({
-                'response': error_msg
+                'response': error_msg,
+                'success': False,
+                'error': str(error_msg)
             }), 500
     else:
         # For text chat, return a streaming response
