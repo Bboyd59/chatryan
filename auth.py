@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
+from urllib.parse import urlparse
 from models import User, db
 
 auth_bp = Blueprint('auth', __name__)
@@ -14,10 +15,17 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
         
-        if user and user.check_password(password):
-            login_user(user)
-            return redirect(url_for('main.chat'))
-        flash('Invalid email or password')
+        if user is None:
+            flash('No account found with this email')
+            return render_template('login.html')
+        if not user.check_password(password):
+            flash('Invalid password')
+            return render_template('login.html')
+        login_user(user)
+        next_page = request.args.get('next')
+        if not next_page or urlparse(next_page).netloc != '':
+            next_page = url_for('main.chat')
+        return redirect(next_page)
     
     return render_template('login.html')
 
