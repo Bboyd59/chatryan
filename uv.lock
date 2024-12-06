@@ -573,6 +573,7 @@ dependencies = [
     { name = "flask-wtf" },
     { name = "psycopg2-binary" },
     { name = "pypdf2" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -586,6 +587,7 @@ requires-dist = [
     { name = "flask-wtf", specifier = ">=1.2.2" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pypdf2", specifier = ">=3.0.1" },
+    { name = "requests", specifier = ">=2.32.3" },
 ]
 
 [[package]]
