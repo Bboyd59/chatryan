@@ -116,7 +116,10 @@ def admin():
 @login_required
 def start_voice():
     try:
-        session_id = str(current_user.id)
+        # Create a new chat session
+        chat = Chat(user_id=current_user.id)
+        db.session.add(chat)
+        db.session.commit()
         
         def on_agent_response(response):
             message = Message(
@@ -126,6 +129,7 @@ def start_voice():
             )
             db.session.add(message)
             db.session.commit()
+            logger.info(f"Agent response saved: {response}")
         
         def on_user_transcript(transcript):
             message = Message(
@@ -135,23 +139,19 @@ def start_voice():
             )
             db.session.add(message)
             db.session.commit()
+            logger.info(f"User transcript saved: {transcript}")
         
-        # Create a new chat session
-        chat = Chat(user_id=current_user.id)
-        db.session.add(chat)
-        db.session.commit()
-        
-        # Create and start conversation
+        # Start conversation with callbacks
         from voice_conversation import voice_manager
-        voice_manager.create_conversation(
-            session_id,
-            on_agent_response=on_agent_response,
-            on_user_transcript=on_user_transcript
+        conversation_id = voice_manager.create_conversation(
+            on_response=on_agent_response,
+            on_transcript=on_user_transcript
         )
         
-        if voice_manager.start_conversation(session_id):
+        if conversation_id:
             return jsonify({'status': 'success', 'message': 'Voice session started'})
         return jsonify({'error': 'Failed to start voice session'}), 500
+        
     except Exception as e:
         logger.error(f"Error in start_voice: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -160,10 +160,8 @@ def start_voice():
 @login_required
 def end_voice():
     try:
-        session_id = str(current_user.id)
         from voice_conversation import voice_manager
-        
-        if voice_manager.end_conversation(session_id):
+        if voice_manager.end_conversation():
             return jsonify({
                 'status': 'success',
                 'message': 'Voice session ended'
