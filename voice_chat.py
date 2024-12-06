@@ -33,10 +33,28 @@ class ElevenLabsAPI:
             logger.error(f"API request failed: {str(e)}")
             raise
 
+    def get_available_agents(self) -> List[Dict[str, Any]]:
+        """Get list of available agents"""
+        try:
+            response = self._make_request("GET", "convai/agents")
+            data = response.json()
+            return data.get("agents", [])
+        except Exception as e:
+            logger.error(f"Error fetching agents: {str(e)}")
+            return []
+
     def start_conversation(self) -> Optional[str]:
         """Start a new conversation with the AI agent"""
         try:
-            endpoint = f"convai/agents/{self.agent_id}/start"
+            # First verify the agent exists
+            agents = self.get_available_agents()
+            agent_exists = any(agent["agent_id"] == self.agent_id for agent in agents)
+            
+            if not agent_exists:
+                logger.error(f"Agent ID {self.agent_id} not found in available agents")
+                return None
+                
+            endpoint = f"convai/agents/{self.agent_id}/conversations"
             response = self._make_request("POST", endpoint)
             data = response.json()
             self.current_conversation_id = data.get("conversation_id")
@@ -62,25 +80,32 @@ class ElevenLabsAPI:
         """Send user input and get AI response with audio"""
         try:
             if not self.current_conversation_id:
-                self.start_conversation()
+                if not self.start_conversation():
+                    raise Exception("Failed to start conversation")
 
             # Send user message
-            endpoint = f"convai/conversations/{self.current_conversation_id}/messages"
-            data = {"text": text}
+            endpoint = f"convai/conversations/{self.current_conversation_id}/input"
+            data = {
+                "text": text,
+                "source": "speech",
+                "position": 0  # Starting position in audio
+            }
             response = self._make_request("POST", endpoint, data)
             
-            # Get conversation status and wait for AI response
+            # Wait for and get AI response
             status = self.get_conversation_status()
-            transcript = status.get("transcript", [])
+            while status.get("status") == "processing":
+                status = self.get_conversation_status()
             
-            # Get the latest AI response
+            # Get the latest AI response from transcript
+            transcript = status.get("transcript", [])
             ai_response = ""
             for message in reversed(transcript):
                 if message.get("role") == "assistant":
                     ai_response = message.get("message", "")
                     break
             
-            # Get audio for the AI response
+            # Get audio response
             audio = None
             if ai_response:
                 audio_endpoint = f"convai/conversations/{self.current_conversation_id}/audio"
