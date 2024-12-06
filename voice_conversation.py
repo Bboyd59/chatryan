@@ -14,6 +14,12 @@ class VoiceConversationManager:
         self.api_key = os.getenv("ELEVENLABS_API_KEY")
         self.agent_id = os.getenv("AGENT_ID")
         self.active_conversations = {}
+        
+        if not self.api_key or not self.agent_id:
+            raise ValueError("Missing required environment variables: ELEVENLABS_API_KEY or AGENT_ID")
+            
+        # Initialize ElevenLabs client
+        self.client = ElevenLabs(api_key=self.api_key)
 
         if not self.api_key or not self.agent_id:
             raise ValueError("Missing required environment variables: ELEVENLABS_API_KEY or AGENT_ID")
