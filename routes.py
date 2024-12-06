@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, render_template, jsonify, request, send_file
+import io
 import PyPDF2
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
+from voice_chat import start_voice_session, end_voice_session, create_voice_response
 
 main_bp = Blueprint('main', __name__)
 
@@ -103,4 +105,45 @@ def admin():
     users = User.query.all()
     chats = Chat.query.all()
     knowledge_base = KnowledgeBase.query.order_by(KnowledgeBase.updated_at.desc()).all()
-    return render_template('admin.html', users=users, chats=chats, knowledge_base=knowledge_base)
+
+@main_bp.route('/api/voice/start', methods=['POST'])
+@login_required
+def start_voice():
+    try:
+        if start_voice_session():
+            return jsonify({'status': 'success', 'message': 'Voice session started'})
+        return jsonify({'error': 'Failed to start voice session'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/voice/end', methods=['POST'])
+@login_required
+def end_voice():
+    try:
+        conversation_data = request.get_json()
+        if end_voice_session(conversation_data):
+            return jsonify({
+                'status': 'success',
+                'message': 'Voice session ended'
+            })
+        return jsonify({'error': 'Failed to end voice session'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/voice/speak', methods=['POST'])
+@login_required
+def generate_voice():
+    try:
+        text = request.get_json().get('text')
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
+            
+        audio = create_voice_response(text)
+        return send_file(
+            io.BytesIO(audio),
+            mimetype='audio/mpeg',
+            as_attachment=True,
+            download_name='response.mp3'
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

@@ -12,4 +12,5 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "anthropic>=0.40.0",
     "pypdf2>=3.0.1",
+    "elevenlabs>=1.13.3",
 ]

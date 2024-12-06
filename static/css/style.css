@@ -288,6 +288,45 @@ body {
     letter-spacing: -0.011em;
     font-weight: 450;
 }
+.voice-button {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.voice-button:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.voice-button svg {
+    color: #3b82f6;
+    transition: all 0.2s ease;
+}
+
+.voice-button.recording {
+    background: #ef4444;
+}
+
+.voice-button.recording svg {
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
 
 .chat-input:focus {
     outline: none;

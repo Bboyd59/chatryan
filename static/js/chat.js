@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const chatForm = document.querySelector('.chat-form');
     const chatInput = document.querySelector('.chat-input');
+    const voiceButton = document.querySelector('#voiceButton');
+    
+    let isRecording = false;
+    let conversation = null;
 
     // Auto-resize textarea
     function adjustTextareaHeight() {
@@ -107,6 +111,127 @@ document.addEventListener('DOMContentLoaded', () => {
             // Remove typing indicator
             typingIndicator.remove();
             appendMessage('Sorry, there was an error processing your message.', false);
+        }
+    });
+
+    // Voice conversation handling
+    async function startVoiceSession() {
+        try {
+            const response = await fetch('/api/voice/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to start voice session');
+            }
+            
+            const data = await response.json();
+            isRecording = true;
+            voiceButton.classList.add('recording');
+            
+            // Add a temporary message to show recording status
+            appendMessage('Voice conversation started. Click the microphone button again to end.', false);
+            
+            // Start voice recognition
+            startVoiceRecognition();
+            
+        } catch (error) {
+            console.error('Error starting voice session:', error);
+            appendMessage('Sorry, there was an error starting the voice conversation.', false);
+        }
+    }
+
+    async function endVoiceSession() {
+        try {
+            const response = await fetch('/api/voice/end', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ conversation })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to end voice session');
+            }
+            
+            stopVoiceRecognition();
+            
+            isRecording = false;
+            voiceButton.classList.remove('recording');
+            conversation = null;
+            
+            appendMessage('Voice conversation ended.', false);
+            
+        } catch (error) {
+            console.error('Error ending voice session:', error);
+            appendMessage('Sorry, there was an error ending the voice conversation.', false);
+        }
+    }
+
+    let recognition = null;
+
+    function startVoiceRecognition() {
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            
+            recognition.onresult = async function(event) {
+                const transcript = Array.from(event.results)
+                    .map(result => result[0].transcript)
+                    .join('');
+                
+                if (event.results[0].isFinal) {
+                    appendMessage(transcript, true);
+                    
+                    // Get AI response
+                    const response = await sendMessage(transcript);
+                    
+                    // Generate and play voice response
+                    try {
+                        const audioResponse = await fetch('/api/voice/speak', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ text: response })
+                        });
+                        
+                        if (audioResponse.ok) {
+                            const audioBlob = await audioResponse.blob();
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            const audio = new Audio(audioUrl);
+                            await audio.play();
+                        }
+                    } catch (error) {
+                        console.error('Error playing voice response:', error);
+                    }
+                }
+            };
+            
+            recognition.start();
+        } else {
+            appendMessage('Voice recognition is not supported in your browser.', false);
+        }
+    }
+
+    function stopVoiceRecognition() {
+        if (recognition) {
+            recognition.stop();
+            recognition = null;
+        }
+    }
+
+    // Voice button click handler
+    voiceButton.addEventListener('click', async () => {
+        if (!isRecording) {
+            await startVoiceSession();
+        } else {
+            await endVoiceSession();
         }
     });
 
