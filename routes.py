@@ -12,6 +12,11 @@ main_bp = Blueprint('main', __name__)
 @login_required
 def chat():
     return render_template('chat.html')
+@main_bp.route('/voice')
+@login_required
+def voice_chat():
+    return render_template('voice_chat.html')
+
 
 @main_bp.route('/api/chat', methods=['POST'])
 @login_required
