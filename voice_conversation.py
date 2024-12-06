@@ -28,18 +28,24 @@ class VoiceConversationManager:
     def create_conversation(self, on_response=None, on_transcript=None) -> Optional[str]:
         """Create and start a new conversation"""
         try:
-            # Test audio device availability
-            devices = sd.query_devices()
-            logger.info(f"Available audio devices: {devices}")
-            
-            # Ensure we have input and output devices
-            input_device = sd.default.device[0]
-            output_device = sd.default.device[1]
-            
-            if input_device is None or output_device is None:
-                raise RuntimeError("No audio input/output devices found")
+            try:
+                # Test audio device availability
+                devices = sd.query_devices()
+                logger.info(f"Available audio devices: {devices}")
                 
-            logger.info(f"Using input device: {input_device}, output device: {output_device}")
+                # Get default devices
+                default_input = sd.query_devices(kind='input')
+                default_output = sd.query_devices(kind='output')
+                logger.info(f"Default input device: {default_input}")
+                logger.info(f"Default output device: {default_output}")
+                
+                # Test audio stream
+                duration = 0.1  # seconds
+                with sd.Stream(samplerate=44100, channels=1):
+                    logger.info("Audio stream test successful")
+            except Exception as audio_error:
+                logger.error(f"Audio device error: {str(audio_error)}")
+                raise RuntimeError(f"Audio device initialization failed: {str(audio_error)}")
             
             # Create the conversation with audio interface
             self.conversation = Conversation(
