@@ -143,7 +143,10 @@ def generate_voice():
         if not text:
             return jsonify({'error': 'No text provided'}), 400
             
-        audio = create_voice_response(text)
+        response_text, audio = create_voice_response(text)
+        if not audio:
+            return jsonify({'error': 'Failed to generate voice response'}), 500
+            
         return send_file(
             io.BytesIO(audio),
             mimetype='audio/mpeg',
