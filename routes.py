@@ -116,43 +116,59 @@ def admin():
 @login_required
 def start_voice():
     try:
-        if start_voice_session():
+        session_id = str(current_user.id)
+        
+        def on_agent_response(response):
+            message = Message(
+                chat_id=chat.id,
+                content=response,
+                is_user=False
+            )
+            db.session.add(message)
+            db.session.commit()
+        
+        def on_user_transcript(transcript):
+            message = Message(
+                chat_id=chat.id,
+                content=transcript,
+                is_user=True
+            )
+            db.session.add(message)
+            db.session.commit()
+        
+        # Create a new chat session
+        chat = Chat(user_id=current_user.id)
+        db.session.add(chat)
+        db.session.commit()
+        
+        # Create and start conversation
+        from voice_conversation import voice_manager
+        voice_manager.create_conversation(
+            session_id,
+            on_agent_response=on_agent_response,
+            on_user_transcript=on_user_transcript
+        )
+        
+        if voice_manager.start_conversation(session_id):
             return jsonify({'status': 'success', 'message': 'Voice session started'})
         return jsonify({'error': 'Failed to start voice session'}), 500
     except Exception as e:
+        logger.error(f"Error in start_voice: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @main_bp.route('/api/voice/end', methods=['POST'])
 @login_required
 def end_voice():
     try:
-        conversation_data = request.get_json()
-        if end_voice_session(conversation_data):
+        session_id = str(current_user.id)
+        from voice_conversation import voice_manager
+        
+        if voice_manager.end_conversation(session_id):
             return jsonify({
                 'status': 'success',
                 'message': 'Voice session ended'
             })
         return jsonify({'error': 'Failed to end voice session'}), 500
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@main_bp.route('/api/voice/speak', methods=['POST'])
-@login_required
-def generate_voice():
-    try:
-        text = request.get_json().get('text')
-        if not text:
-            return jsonify({'error': 'No text provided'}), 400
-            
-        response_text, audio = create_voice_response(text)
-        if not audio:
-            return jsonify({'error': 'Failed to generate voice response'}), 500
-            
-        return send_file(
-            io.BytesIO(audio),
-            mimetype='audio/mpeg',
-            as_attachment=True,
-            download_name='response.mp3'
-        )
-    except Exception as e:
+        logger.error(f"Error in end_voice: {str(e)}")
         return jsonify({'error': str(e)}), 500
