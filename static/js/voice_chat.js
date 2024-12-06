@@ -14,9 +14,34 @@ function VoiceChat() {
             console.log('Disconnected');
             setStatus('disconnected');
         },
-        onMessage: (message) => {
+        onMessage: async (message) => {
             console.log('Message:', message);
-            appendMessage(message.text, false);
+            try {
+                // Display the AI's text response
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message ai';
+                messageDiv.textContent = message.text;
+                document.querySelector('.messages').appendChild(messageDiv);
+
+                // Get text-to-speech audio for the response
+                const audioResponse = await fetch('/api/voice/speak', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: message.text })
+                });
+                
+                if (audioResponse.ok) {
+                    const audioBlob = await audioResponse.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    await audio.play();
+                }
+            } catch (error) {
+                console.error('Error handling AI response:', error);
+                setError('Error playing AI response');
+            }
         },
         onError: (error) => {
             console.error('Error:', error);

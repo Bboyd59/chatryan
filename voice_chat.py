@@ -60,8 +60,9 @@ elevenlabs_api = ElevenLabsAPI()
 def create_voice_response(text: str) -> Tuple[str, Optional[bytes]]:
     """Generate AI response and convert it to speech"""
     try:
-        # For now, we'll use a simple response format
-        ai_response = f"I understand you said: {text}"
+        # Get the AI response from Claude
+        from app import claude_api
+        ai_response = claude_api.get_response(text)
         
         # Generate speech from the response
         audio = elevenlabs_api.text_to_speech(ai_response)
