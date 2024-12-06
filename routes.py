@@ -15,7 +15,8 @@ def chat():
 @main_bp.route('/voice')
 @login_required
 def voice_chat():
-    return render_template('voice_chat.html')
+    agent_id = os.environ.get('AGENT_ID')
+    return render_template('voice_chat.html', agent_id=agent_id)
 
 
 @main_bp.route('/api/chat', methods=['POST'])

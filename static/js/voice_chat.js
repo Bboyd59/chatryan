@@ -1,145 +1,119 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const voiceButton = document.getElementById('voiceButton');
-    const statusText = document.getElementById('statusText');
-    const messagesContainer = document.getElementById('messages');
+const { useState, useCallback, useEffect } = React;
+
+function VoiceChat() {
+    const [error, setError] = useState(null);
+    const [status, setStatus] = useState('disconnected');
     
-    let isRecording = false;
-    let recognition = null;
-
-    function appendMessage(text, isUser) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
-        messageDiv.textContent = text;
-        messagesContainer.appendChild(messageDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    async function startVoiceSession() {
-        try {
-            const response = await fetch('/api/voice/start', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error('Failed to start voice session');
-            }
-            
-            isRecording = true;
-            voiceButton.classList.add('recording');
-            statusText.textContent = 'Listening... Click again to stop';
-            startVoiceRecognition();
-            
-        } catch (error) {
-            console.error('Error starting voice session:', error);
-            statusText.textContent = 'Error starting voice session';
-        }
-    }
-
-    async function endVoiceSession() {
-        try {
-            stopVoiceRecognition();
-            
-            const response = await fetch('/api/voice/end', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error('Failed to end voice session');
-            }
-            
-            isRecording = false;
-            voiceButton.classList.remove('recording');
-            statusText.textContent = 'Click the microphone to start speaking';
-            
-        } catch (error) {
-            console.error('Error ending voice session:', error);
-            statusText.textContent = 'Error ending voice session';
-        }
-    }
-
-    function startVoiceRecognition() {
-        if ('webkitSpeechRecognition' in window) {
-            recognition = new webkitSpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            
-            recognition.onresult = async function(event) {
-                const transcript = Array.from(event.results)
-                    .map(result => result[0].transcript)
-                    .join('');
-                
-                if (event.results[0].isFinal) {
-                    appendMessage(transcript, true);
-                    
-                    try {
-                        // Get AI response
-                        const chatResponse = await fetch('/api/chat', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ message: transcript })
-                        });
-                        
-                        if (!chatResponse.ok) {
-                            throw new Error('Failed to get AI response');
-                        }
-                        
-                        const chatData = await chatResponse.json();
-                        appendMessage(chatData.response, false);
-                        
-                        // Generate and play voice response
-                        const audioResponse = await fetch('/api/voice/speak', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ text: chatData.response })
-                        });
-                        
-                        if (audioResponse.ok) {
-                            const audioBlob = await audioResponse.blob();
-                            const audioUrl = URL.createObjectURL(audioBlob);
-                            const audio = new Audio(audioUrl);
-                            await audio.play();
-                        }
-                    } catch (error) {
-                        console.error('Error processing voice chat:', error);
-                        statusText.textContent = 'Error processing voice chat';
-                    }
-                }
-            };
-            
-            recognition.onerror = function(event) {
-                console.error('Speech recognition error:', event.error);
-                statusText.textContent = 'Speech recognition error';
-                endVoiceSession();
-            };
-            
-            recognition.start();
-        } else {
-            statusText.textContent = 'Speech recognition is not supported in your browser';
-        }
-    }
-
-    function stopVoiceRecognition() {
-        if (recognition) {
-            recognition.stop();
-            recognition = null;
-        }
-    }
-
-    voiceButton.addEventListener('click', async () => {
-        if (!isRecording) {
-            await startVoiceSession();
-        } else {
-            await endVoiceSession();
-        }
+    const conversation = window.ElevenLabs.useConversation({
+        onConnect: () => {
+            console.log('Connected');
+            setStatus('connected');
+            setError(null);
+        },
+        onDisconnect: () => {
+            console.log('Disconnected');
+            setStatus('disconnected');
+        },
+        onMessage: (message) => {
+            console.log('Message:', message);
+            appendMessage(message.text, false);
+        },
+        onError: (error) => {
+            console.error('Error:', error);
+            setError('Error in voice conversation');
+            setStatus('error');
+        },
     });
+
+    const startConversation = useCallback(async () => {
+        try {
+            setError(null);
+            // Request microphone permission
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+            setStatus('connecting');
+
+            // Start the conversation with ElevenLabs agent
+            await conversation.startSession({
+                agentId: window.AGENT_ID,
+                connection: {
+                    connectionKey: 'default',
+                    resource: 'websocket',
+                }
+            });
+
+        } catch (error) {
+            console.error('Failed to start conversation:', error);
+            setError('Failed to start conversation: ' + error.message);
+            setStatus('error');
+        }
+    }, [conversation]);
+
+    const stopConversation = useCallback(async () => {
+        try {
+            await conversation.endSession();
+            setStatus('disconnected');
+        } catch (error) {
+            console.error('Failed to end conversation:', error);
+            setError('Failed to end conversation: ' + error.message);
+        }
+    }, [conversation]);
+
+    const statusMessage = {
+        'disconnected': 'Click the microphone to start speaking',
+        'connecting': 'Initializing voice chat...',
+        'connected': conversation.isSpeaking ? 'AI is speaking...' : 'Listening...',
+        'error': error || 'An error occurred'
+    }[status];
+
+    return React.createElement('div', { className: 'voice-chat-container' },
+        React.createElement('div', { className: 'voice-interface' },
+            React.createElement('div', { 
+                className: `voice-status ${status === 'error' ? 'error' : ''}`
+            }, statusMessage),
+            React.createElement('button', {
+                className: `large-voice-button ${status === 'connected' ? 'recording' : ''} ${status === 'error' ? 'error' : ''}`,
+                onClick: status === 'connected' ? stopConversation : startConversation,
+                disabled: status === 'connecting'
+            },
+                React.createElement('svg', {
+                    xmlns: 'http://www.w3.org/2000/svg',
+                    width: 48,
+                    height: 48,
+                    viewBox: '0 0 24 24',
+                    fill: 'none',
+                    stroke: 'currentColor',
+                    strokeWidth: 2,
+                    strokeLinecap: 'round',
+                    strokeLinejoin: 'round'
+                },
+                    React.createElement('path', {
+                        d: 'M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z'
+                    }),
+                    React.createElement('path', {
+                        d: 'M19 10v2a7 7 0 0 1-14 0v-2'
+                    }),
+                    React.createElement('line', {
+                        x1: 12,
+                        y1: 19,
+                        x2: 12,
+                        y2: 23
+                    }),
+                    React.createElement('line', {
+                        x1: 8,
+                        y1: 23,
+                        x2: 16,
+                        y2: 23
+                    })
+                )
+            ),
+            React.createElement('div', { className: 'messages' })
+        )
+    );
+}
+
+// Initialize React component
+document.addEventListener('DOMContentLoaded', function() {
+    const root = document.getElementById('voice-chat-root');
+    const rootElement = ReactDOM.createRoot(root);
+    rootElement.render(React.createElement(VoiceChat));
 });
