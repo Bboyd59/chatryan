@@ -83,16 +83,15 @@ def process_message():
             return jsonify({'error': str(e)}), 500
     
     # Fallback to Claude or if voice is not enabled
-    claude_response = get_claude_response(message)
-    ai_message = Message(chat_id=chat.id, content=claude_response, is_user=False)
+    def generate():
+        for chunk in get_claude_response(message):
+            yield f"data: {chunk}\n\n"
+    
+    ai_message = Message(chat_id=chat.id, content="", is_user=False)
     db.session.add(ai_message)
     db.session.commit()
     
-    return jsonify({
-        'response': claude_response,
-        'has_audio': False,
-        'message_id': ai_message.id
-    })
+    return Response(generate(), mimetype='text/event-stream')
 
 @main_bp.route('/admin/upload-knowledge', methods=['POST'])
 @login_required

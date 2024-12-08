@@ -71,9 +71,12 @@
 .message-container.ai .message-bubble {
     margin-right: auto;
     color: var(--text-primary);
+    background: none;
+    box-shadow: none;
+    padding: 0;
 }
 
-.message-bubble:hover {
+.message-container.user .message-bubble:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }

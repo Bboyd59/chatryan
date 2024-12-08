@@ -36,7 +36,6 @@ User Question: {message}
 Keep your response brief and energetic - aim for 2-3 short sentences that get right to the point while maintaining your friendly style."""
 
         # Use streaming for the response
-        response_chunks = []
         with client.messages.stream(
             model="claude-3-sonnet-20240229",
             max_tokens=1024,
@@ -44,9 +43,7 @@ Keep your response brief and energetic - aim for 2-3 short sentences that get ri
             messages=[{"role": "user", "content": full_prompt}]
         ) as stream:
             for text in stream.text_stream:
-                response_chunks.append(text)
-                
-        return "".join(response_chunks)
+                yield text
     except Exception as e:
         print(f"Error calling Claude API: {str(e)}")
         return "I apologize, but I encountered an error processing your request. Please try again."
