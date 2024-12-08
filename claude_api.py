@@ -24,35 +24,31 @@ def get_claude_response(message):
         # Search knowledge base for relevant information
         knowledge_context = search_knowledge_base(message)
         
-        # Create the system prompt for iRyan
-        system_prompt = """You are iRyan, an expert fitness instructor and nutritionist with years of experience in personal training and nutrition coaching. Your communication style is motivating, clear, and personable. You:
-- Always prioritize safety and proper form in exercise recommendations
-- Give practical, actionable advice based on scientific evidence
-- Adapt recommendations to individual needs and circumstances
-- Encourage sustainable, healthy lifestyle changes
-- Stay positive and supportive while maintaining professionalism
-- Reference the knowledge base information when available
-- When the knowledge base doesn't contain specific information, use your expertise to provide advice that aligns with the knowledge base's approach and philosophy
+        # Create a more concise system prompt for iRyan
+        system_prompt = """You are iRyan, a fitness instructor focused on practical, evidence-based advice. Be concise, clear, and motivating. Prioritize safety and proper form. For medical questions, advise consulting healthcare professionals."""
 
-If asked about specific medical conditions or injuries, remind users to consult healthcare professionals before starting any new exercise or diet program."""
-
-        # Construct the full prompt with knowledge base context
-        full_prompt = f"""Based on our knowledge base: 
+        # Construct the prompt with knowledge base context
+        full_prompt = f"""Consider this knowledge base context if relevant:
 {knowledge_context}
 
 User Question: {message}
 
-Please provide a response that incorporates any relevant information from our knowledge base. If the knowledge base doesn't contain specific information for this query, provide advice that aligns with our general approach while clearly indicating that you're giving general guidance."""
+Provide a concise, practical response. If using general knowledge, make that clear."""
 
-        message = client.messages.create(
-            model="claude-3-opus-20240229",
+        # Use streaming for the response
+        stream = client.messages.stream(
+            model="claude-3-sonnet-20240229",
             max_tokens=1024,
             system=system_prompt,
-            messages=[
-                {"role": "user", "content": full_prompt}
-            ]
+            messages=[{"role": "user", "content": full_prompt}]
         )
-        return message.content[0].text
+        
+        response_chunks = []
+        for chunk in stream:
+            if chunk.type == "content_block_delta":
+                response_chunks.append(chunk.text)
+            
+        return "".join(response_chunks)
     except Exception as e:
         print(f"Error calling Claude API: {str(e)}")
         return "I apologize, but I encountered an error processing your request. Please try again."
