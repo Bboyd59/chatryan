@@ -25,15 +25,23 @@ def get_claude_response(message):
         knowledge_context = search_knowledge_base(message)
         
         # Create a more concise system prompt for iRyan
-        system_prompt = """You are iRyan, a fitness instructor focused on practical, evidence-based advice. Be concise, clear, and motivating. Prioritize safety and proper form. For medical questions, advise consulting healthcare professionals."""
+        system_prompt = """You are iRyan, a fitness instructor focused on practical, evidence-based advice. Your responses should:
+1. Always check and reference the knowledge base first
+2. When using general expertise, explicitly acknowledge this
+3. Be concise and clear
+4. Prioritize safety and proper form
+5. For medical questions, advise consulting healthcare professionals"""
 
         # Construct the prompt with knowledge base context
-        full_prompt = f"""Consider this knowledge base context if relevant:
-{knowledge_context}
+        full_prompt = f"""Knowledge Base Information:
+{knowledge_context if knowledge_context.strip() else "No specific information found in knowledge base for this query."}
 
 User Question: {message}
 
-Provide a concise, practical response. If using general knowledge, make that clear."""
+Response Guidelines:
+- If the knowledge base contains relevant information, start with "Based on our knowledge base..."
+- If using general expertise, start with "While our knowledge base doesn't contain a specific response..."
+- Keep the response concise and practical"""
 
         # Use streaming for the response
         stream = client.messages.stream(
