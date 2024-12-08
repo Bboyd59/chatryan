@@ -47,8 +47,8 @@ Please provide a response that incorporates any relevant information from our kn
         message = client.messages.create(
             model="claude-3-opus-20240229",
             max_tokens=1024,
+            system=system_prompt,
             messages=[
-                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": full_prompt}
             ]
         )
