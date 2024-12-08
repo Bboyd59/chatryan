@@ -86,24 +86,33 @@ def process_message():
     complete_response = []
     
     def generate():
-        # Save user message first
-        db.session.add(user_message)
-        db.session.commit()
+        from flask import current_app
         
-        # Initialize AI message with empty content
-        ai_message = Message(chat_id=chat.id, content="", is_user=False)
-        db.session.add(ai_message)
-        db.session.commit()
-        
-        # Stream the response
-        for chunk in get_claude_response(message):
-            complete_response.append(chunk)
-            yield f"data: {chunk}\n\n"
-        
-        # Update the AI message with complete response
-        ai_message.content = "".join(complete_response)
-        db.session.commit()
-        yield f"data: [DONE]\n\n"
+        # Use application context for database operations
+        with current_app.app_context():
+            # Save user message
+            db.session.add(user_message)
+            db.session.commit()
+            
+            # Initialize AI message
+            ai_message = Message(chat_id=chat.id, content="", is_user=False)
+            db.session.add(ai_message)
+            db.session.commit()
+            
+            try:
+                # Stream the response
+                for chunk in get_claude_response(message):
+                    complete_response.append(chunk)
+                    yield f"data: {chunk}\n\n"
+                    
+                # Update AI message with complete response
+                ai_message.content = "".join(complete_response)
+                db.session.commit()
+                yield f"data: [DONE]\n\n"
+            except Exception as e:
+                print(f"Error in generate(): {str(e)}")
+                yield f"data: Error processing message\n\n"
+                yield f"data: [DONE]\n\n"
     
     return Response(generate(), mimetype='text/event-stream')
 

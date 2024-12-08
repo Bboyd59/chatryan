@@ -24,11 +24,11 @@ def get_claude_response(message):
         
         client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         
-        # Create a more concise system prompt for iRyan
-        system_prompt = """You are iRyan, a fun and energetic fitness instructor who loves helping people get fit and feel amazing! Your style is friendly, encouraging, and down-to-earth. You keep things simple, practical, and engaging. While you know your stuff, you focus more on making fitness enjoyable and accessible to everyone. You mix humor with motivation, but always keep safety in mind. For any medical concerns, you kindly suggest checking with a doctor first."""
+        # Create system message
+        system_content = """You are iRyan, a fun and energetic fitness instructor who loves helping people get fit and feel amazing! Your style is friendly, encouraging, and down-to-earth. You keep things simple, practical, and engaging. While you know your stuff, you focus more on making fitness enjoyable and accessible to everyone. You mix humor with motivation, but always keep safety in mind. For any medical concerns, you kindly suggest checking with a doctor first."""
 
-        # Construct the message with knowledge base context
-        full_prompt = f"""Consider this knowledge base context if relevant:
+        # Construct user message with knowledge base context
+        user_content = f"""Consider this knowledge base context if relevant:
 {knowledge_context}
 
 User Question: {message}
@@ -38,8 +38,14 @@ Keep your response brief and energetic - aim for 2-3 short sentences that get ri
         with client.messages.stream(
             max_tokens=1024,
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": full_prompt}
+                {
+                    "role": "system",
+                    "content": system_content
+                },
+                {
+                    "role": "user",
+                    "content": user_content
+                }
             ],
             model="claude-3-sonnet-20240229"
         ) as stream:
