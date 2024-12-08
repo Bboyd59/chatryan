@@ -3,9 +3,7 @@ import PyPDF2
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
-from elevenlabs.client import ElevenLabs
-from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
-from elevenlabs.conversational_ai.conversation import Conversation
+import elevenlabs_api
 import io
 import os
 
@@ -48,19 +46,19 @@ def process_message():
             db.session.add(ai_message)
             db.session.commit()
             
-            # Generate audio from the response
+            # Generate audio from the response using ElevenLabs
             print("Generating audio response...")
-            client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
-            conversation = Conversation(
-                client=client,
-                AGENT_ID=os.getenv("AGENT_ID"),
-                audio_interface=DefaultAudioInterface(),
-                requires_auth=bool(os.getenv("ELEVENLABS_API_KEY"))
-            )
-            
-            # Send message to get response
-            response = conversation.send_message(message)
-            audio = response.audio
+            conversation = elevenlabs_api.create_conversation()
+            if conversation:
+                response = elevenlabs_api.send_message(conversation, claude_response)
+                if response and response.get('audio'):
+                    audio = response['audio']
+                else:
+                    print("No audio response received")
+                    audio = None
+            else:
+                print("Failed to create conversation")
+                audio = None
             
             if audio:
                 # Convert audio bytes to base64 string

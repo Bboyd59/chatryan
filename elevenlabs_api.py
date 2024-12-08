@@ -36,9 +36,9 @@ def main():
     def callback_user_transcript(transcript):
         print(f"User: {transcript}")
     
-    conversation.callback_agent_response = lambda response: print(f"Agent: {response}")
-    conversation.callback_agent_response_correction = lambda original, corrected: print(f"Agent: {original} -> {corrected}")
-    conversation.callback_user_transcript = lambda transcript: print(f"User: {transcript}")
+    conversation.callback_agent_response = callback_agent_response
+    conversation.callback_agent_response_correction = callback_agent_response_correction
+    conversation.callback_user_transcript = callback_user_transcript
     
     # Start the conversation session
     conversation.start_session()
@@ -48,6 +48,28 @@ def main():
     
     conversation_id = conversation.wait_for_session_end()
     print(f"Conversation ID: {conversation_id}")
+
+def create_conversation():
+    """
+    Create and return a new conversation instance
+    Returns:
+        Conversation: New conversation instance
+    """
+    AGENT_ID = os.getenv('AGENT_ID')
+    API_KEY = os.getenv('ELEVEN_API_KEY')
+
+    if not AGENT_ID or not API_KEY:
+        return None
+
+    client = ElevenLabs(api_key=API_KEY)
+    conversation = Conversation(
+        client=client,
+        AGENT_ID=AGENT_ID,
+        audio_interface=DefaultAudioInterface(),
+        requires_auth=True
+    )
+    
+    return conversation
 
 def send_message(conversation, message):
     """
@@ -66,31 +88,12 @@ def send_message(conversation, message):
         # Get both text and audio from the response
         return {
             'text': response.text,
-            'audio': response.audio.decode('utf-8') if response.audio else None,
+            'audio': response.audio,
             'conversation_id': conversation.conversation_id
         }
     except Exception as e:
         print(f"Error sending message: {str(e)}")
         return None
 
-def end_conversation(conversation):
-    """
-    End the conversation session
-    Args:
-        conversation: Active conversation instance
-    """
-    if not conversation:
-        return
-        
-    try:
-        conversation.end_session()
-        print(f"Conversation ID: {conversation.conversation_id}")
-    except Exception as e:
-        print(f"Error ending conversation: {str(e)}")
-
-# Handle graceful shutdown
-def signal_handler(sig, frame):
-    print("\nGracefully shutting down...")
-    sys.exit(0)
-
-signal.signal(signal.SIGINT, signal_handler)
+if __name__ == '__main__':
+    main()
