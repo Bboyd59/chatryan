@@ -4,8 +4,8 @@ from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
 from elevenlabs.client import ElevenLabs
-from elevenlabs.conversational_ai.conversation import Conversation
 from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
+from elevenlabs.conversational_ai.conversation import Conversation
 import io
 import os
 
@@ -37,67 +37,52 @@ def process_message():
     voice_enabled = request.json.get('voice_enabled', False)
     
     if voice_enabled:
-        print("Voice mode enabled, initializing ElevenLabs conversation...")
-        
         try:
-            AGENT_ID = os.getenv('AGENT_ID')
-            API_KEY = os.getenv('ELEVENLABS_API_KEY')
+            print("Voice mode enabled, processing with ElevenLabs...")
             
-            if not AGENT_ID:
-                error_msg = "AGENT_ID environment variable must be set"
-                print(error_msg)
-                return jsonify({'error': error_msg}), 500
+            # Get AI response first
+            claude_response = get_claude_response(message)
             
-            # Initialize or get existing conversation
-            conversation = session.get('eleven_conversation')
-            if not conversation:
-                print("Creating new ElevenLabs conversation...")
-                client = ElevenLabs(api_key=API_KEY)
-                conversation = Conversation(
-                    client=client,
-                    agent_id=AGENT_ID,
-                    audio_interface=DefaultAudioInterface(),
-                    requires_auth=bool(API_KEY)
-                )
-                
-                # Set up callbacks
-                conversation.callback_agent_response = lambda response: print(f"Agent: {response}")
-                conversation.callback_agent_response_correction = lambda original, corrected: print(f"Agent: {original} -> {corrected}")
-                conversation.callback_user_transcript = lambda transcript: print(f"User: {transcript}")
-                
-                print("Starting conversation session...")
-                conversation.start_session()
-                session['eleven_conversation'] = conversation
-                print("New conversation started successfully")
+            # Save the message
+            ai_message = Message(chat_id=chat.id, content=claude_response, is_user=False)
+            db.session.add(ai_message)
+            db.session.commit()
             
-            # Send message and get response
-            print(f"Sending message to ElevenLabs: {message}")
+            # Generate audio from the response
+            print("Generating audio response...")
+            client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
+            conversation = Conversation(
+                client=client,
+                AGENT_ID=os.getenv("AGENT_ID"),
+                audio_interface=DefaultAudioInterface(),
+                requires_auth=bool(os.getenv("ELEVENLABS_API_KEY"))
+            )
+            
+            # Send message to get response
             response = conversation.send_message(message)
+            audio = response.audio
             
-            if response:
-                print("Received response from ElevenLabs")
-                ai_message = Message(chat_id=chat.id, content=response.text, is_user=False)
-                db.session.add(ai_message)
-                db.session.commit()
+            if audio:
+                # Convert audio bytes to base64 string
+                import base64
+                audio_b64 = base64.b64encode(audio).decode('utf-8')
                 
-                response_data = {
-                    'response': response.text,
-                    'has_audio': bool(response.audio),
+                return jsonify({
+                    'response': claude_response,
+                    'has_audio': True,
                     'message_id': ai_message.id,
-                    'audio': response.audio.decode('utf-8') if response.audio else None,
-                    'conversation_id': conversation.conversation_id
-                }
-                print(f"Audio available: {bool(response.audio)}")
-                return jsonify(response_data)
+                    'audio': audio_b64
+                })
             else:
-                error_msg = "No response received from ElevenLabs"
-                print(error_msg)
-                return jsonify({'error': error_msg}), 500
+                return jsonify({
+                    'response': claude_response,
+                    'has_audio': False,
+                    'message_id': ai_message.id
+                })
                 
         except Exception as e:
-            error_msg = f"Error in ElevenLabs conversation: {str(e)}"
-            print(error_msg)
-            return jsonify({'error': error_msg}), 500
+            print(f"Error in voice processing: {str(e)}")
+            return jsonify({'error': str(e)}), 500
     
     # Fallback to Claude or if voice is not enabled
     claude_response = get_claude_response(message)

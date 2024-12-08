@@ -127,16 +127,36 @@ document.addEventListener('DOMContentLoaded', () => {
             if (voiceEnabled) {
                 if (data.has_audio && data.audio) {
                     console.log('Playing audio response...');
-                    const audio = new Audio('data:audio/mpeg;base64,' + data.audio);
-                    audio.play().catch(error => {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const audioElement = new Audio('data:audio/mpeg;base64,' + data.audio);
+                    
+                    // Create source node
+                    const source = audioContext.createMediaElementSource(audioElement);
+                    
+                    // Create gain node for volume control
+                    const gainNode = audioContext.createGain();
+                    gainNode.gain.value = 1.0; // Set initial volume
+                    
+                    // Connect nodes
+                    source.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    // Play audio
+                    audioElement.play().catch(error => {
                         console.error('Error playing audio:', error);
-                        appendMessage('Error playing audio response', false);
+                        appendMessage('Error playing audio response. Please try again.', false);
+                    });
+                    
+                    // Update UI to show audio is playing
+                    voiceToggle.classList.add('playing');
+                    
+                    // Remove playing class when audio ends
+                    audioElement.addEventListener('ended', () => {
+                        voiceToggle.classList.remove('playing');
                     });
                 } else {
                     console.log('No audio response available');
-                    if (voiceEnabled) {
-                        appendMessage('Voice response not available. Please check if ElevenLabs is properly configured.', false);
-                    }
+                    appendMessage('Voice response not available. Please try again.', false);
                 }
             }
         } catch (error) {
