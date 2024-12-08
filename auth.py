@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
@@ -5,6 +6,7 @@ from wtforms import StringField, PasswordField
 from wtforms.validators import DataRequired, Email
 from models import User, db
 
+logger = logging.getLogger(__name__)
 auth_bp = Blueprint('auth', __name__)
 
 class LoginForm(FlaskForm):
@@ -14,22 +16,28 @@ class LoginForm(FlaskForm):
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
+        logger.debug('User already authenticated, redirecting to chat')
         return redirect(url_for('main.chat'))
     
     form = LoginForm()
     if request.method == 'POST':
+        logger.debug(f'Processing login POST request: {request.form}')
         if form.validate_on_submit():
+            logger.debug('Form validation successful')
             user = User.query.filter_by(email=form.email.data).first()
             
             if user and user.check_password(form.password.data):
                 login_user(user)
+                logger.info(f'User {user.email} logged in successfully')
                 next_page = request.args.get('next')
                 if not next_page or not next_page.startswith('/'):
                     next_page = url_for('main.chat')
                 return redirect(next_page)
-                
+            
+            logger.warning(f'Invalid login attempt for email: {form.email.data}')
             flash('Invalid email or password')
         else:
+            logger.warning(f'Form validation failed. Errors: {form.errors}')
             for field, errors in form.errors.items():
                 for error in errors:
                     flash(f'{field}: {error}')
