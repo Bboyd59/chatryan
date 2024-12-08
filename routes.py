@@ -1,10 +1,8 @@
-from flask import Blueprint, render_template, jsonify, request, send_file
-import io
+from flask import Blueprint, render_template, jsonify, request
 import PyPDF2
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
-from voice_chat import start_voice_session, end_voice_session, create_voice_response
 
 main_bp = Blueprint('main', __name__)
 
@@ -12,12 +10,6 @@ main_bp = Blueprint('main', __name__)
 @login_required
 def chat():
     return render_template('chat.html')
-@main_bp.route('/voice')
-@login_required
-def voice_chat():
-    agent_id = os.environ.get('AGENT_ID')
-    return render_template('voice_chat.html', agent_id=agent_id)
-
 
 @main_bp.route('/api/chat', methods=['POST'])
 @login_required
@@ -111,62 +103,4 @@ def admin():
     users = User.query.all()
     chats = Chat.query.all()
     knowledge_base = KnowledgeBase.query.order_by(KnowledgeBase.updated_at.desc()).all()
-
-@main_bp.route('/api/voice/start', methods=['POST'])
-@login_required
-def start_voice():
-    try:
-        # Create a new chat session
-        chat = Chat(user_id=current_user.id)
-        db.session.add(chat)
-        db.session.commit()
-        
-        def on_agent_response(response):
-            message = Message(
-                chat_id=chat.id,
-                content=response,
-                is_user=False
-            )
-            db.session.add(message)
-            db.session.commit()
-            logger.info(f"Agent response saved: {response}")
-        
-        def on_user_transcript(transcript):
-            message = Message(
-                chat_id=chat.id,
-                content=transcript,
-                is_user=True
-            )
-            db.session.add(message)
-            db.session.commit()
-            logger.info(f"User transcript saved: {transcript}")
-        
-        # Start conversation with callbacks
-        from voice_conversation import voice_manager
-        conversation_id = voice_manager.create_conversation(
-            on_response=on_agent_response,
-            on_transcript=on_user_transcript
-        )
-        
-        if conversation_id:
-            return jsonify({'status': 'success', 'message': 'Voice session started'})
-        return jsonify({'error': 'Failed to start voice session'}), 500
-        
-    except Exception as e:
-        logger.error(f"Error in start_voice: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@main_bp.route('/api/voice/end', methods=['POST'])
-@login_required
-def end_voice():
-    try:
-        from voice_conversation import voice_manager
-        if voice_manager.end_conversation():
-            return jsonify({
-                'status': 'success',
-                'message': 'Voice session ended'
-            })
-        return jsonify({'error': 'Failed to end voice session'}), 500
-    except Exception as e:
-        logger.error(f"Error in end_voice: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+    return render_template('admin.html', users=users, chats=chats, knowledge_base=knowledge_base)

@@ -51,20 +51,20 @@
 }
 
 .message-bubble {
-    padding: 0.75rem 1.25rem;
-    border-radius: 1rem;
+    padding: 1.25rem 1.75rem;
+    border-radius: 1.5rem;
     background: var(--surface);
     backdrop-filter: blur(10px);
     box-shadow: 
-        0 2px 4px rgba(0, 0, 0, 0.08),
-        0 1px 2px rgba(0, 0, 0, 0.04);
+        0 4px 6px rgba(0, 0, 0, 0.1),
+        0 2px 4px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
     border: 1px solid var(--border);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 0.95rem;
-    line-height: 1.5;
+    line-height: 1.7;
     letter-spacing: -0.011em;
     font-weight: 450;
-    max-width: fit-content;
 }
 
 .message-container.user .message-bubble {
@@ -287,45 +287,6 @@ body {
     backdrop-filter: blur(10px);
     letter-spacing: -0.011em;
     font-weight: 450;
-}
-.voice-button {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.voice-button:hover {
-    background: rgba(59, 130, 246, 0.1);
-}
-
-.voice-button svg {
-    color: #3b82f6;
-    transition: all 0.2s ease;
-}
-
-.voice-button.recording {
-    background: #ef4444;
-}
-
-.voice-button.recording svg {
-    color: white;
-    animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
 }
 
 .chat-input:focus {
@@ -671,7 +632,7 @@ body {
     }
 
     .message-bubble {
-        padding: 0.625rem 1rem;
+        padding: 1rem 1.25rem;
         font-size: 0.95rem;
     }
 
@@ -709,95 +670,4 @@ body {
         padding: 0.875rem 1rem;
         font-size: 0.9rem;
     }
-}
-/* Voice Chat Styles */
-.voice-chat-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: calc(100vh - 80px);
-    padding: 2rem;
-}
-
-.voice-interface {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2rem;
-    max-width: 600px;
-    width: 100%;
-}
-
-.voice-status {
-    text-align: center;
-    font-size: 1.2rem;
-    color: var(--text-secondary);
-}
-
-.large-voice-button {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: var(--bg-secondary);
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.large-voice-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
-
-.large-voice-button.recording {
-    background: #ef4444;
-    animation: pulse 2s infinite;
-}
-
-.large-voice-button.recording svg {
-    color: white;
-}
-
-.messages {
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    padding: 1rem;
-    border-radius: 8px;
-    background: var(--bg-secondary);
-}
-
-.message {
-    margin: 1rem 0;
-    padding: 1rem;
-    border-radius: 8px;
-    background: var(--bg-primary);
-    animation: fadeIn 0.3s ease;
-}
-
-.message.user {
-    background: var(--accent);
-    color: white;
-    margin-left: 20%;
-}
-
-.message.ai {
-    background: var(--bg-primary);
-    margin-right: 20%;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
 }
