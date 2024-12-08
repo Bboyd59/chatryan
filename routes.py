@@ -34,29 +34,46 @@ def process_message():
     voice_enabled = request.json.get('voice_enabled', False)
     
     if voice_enabled:
+        print("Voice mode enabled, initializing ElevenLabs conversation...")
+        
         # Initialize or get existing conversation
         conversation = session.get('eleven_conversation')
         if not conversation:
+            print("No existing conversation found, starting new one...")
             conversation = start_conversation()
             if not conversation:
-                return jsonify({'error': 'Failed to start ElevenLabs conversation'}), 500
+                error_msg = "Failed to start ElevenLabs conversation. Please check API key and Agent ID."
+                print(error_msg)
+                return jsonify({'error': error_msg}), 500
             session['eleven_conversation'] = conversation
+            print("New conversation started successfully")
+        else:
+            print("Using existing conversation session")
         
         # Get ElevenLabs conversational response
+        print("Sending message to ElevenLabs...")
         response = send_message(conversation, message)
         
-        if response and response.get('text'):
+        if not response:
+            error_msg = "Failed to get response from ElevenLabs"
+            print(error_msg)
+            return jsonify({'error': error_msg}), 500
+            
+        if response.get('text'):
+            print("Received response from ElevenLabs")
             ai_message = Message(chat_id=chat.id, content=response['text'], is_user=False)
             db.session.add(ai_message)
             db.session.commit()
             
-            return jsonify({
+            response_data = {
                 'response': response['text'],
                 'has_audio': bool(response.get('audio')),
                 'message_id': ai_message.id,
                 'audio': response.get('audio'),
                 'conversation_id': response.get('conversation_id')
-            })
+            }
+            print(f"Audio available: {response_data['has_audio']}")
+            return jsonify(response_data)
     
     # Fallback to Claude or if voice is not enabled
     claude_response = get_claude_response(message)

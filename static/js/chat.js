@@ -117,12 +117,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             appendMessage(data.response, false);
             
+            if (data.error) {
+                console.error('Server error:', data.error);
+                appendMessage('Error: ' + data.error, false);
+                return;
+            }
+            
             // Handle audio response if voice is enabled
-            if (voiceEnabled && data.has_audio && data.audio) {
-                const audio = new Audio('data:audio/mpeg;base64,' + data.audio);
-                audio.play().catch(error => {
-                    console.error('Error playing audio:', error);
-                });
+            if (voiceEnabled) {
+                if (data.has_audio && data.audio) {
+                    console.log('Playing audio response...');
+                    const audio = new Audio('data:audio/mpeg;base64,' + data.audio);
+                    audio.play().catch(error => {
+                        console.error('Error playing audio:', error);
+                        appendMessage('Error playing audio response', false);
+                    });
+                } else {
+                    console.log('No audio response available');
+                    if (voiceEnabled) {
+                        appendMessage('Voice response not available. Please check if ElevenLabs is properly configured.', false);
+                    }
+                }
             }
         } catch (error) {
             console.error('Error:', error);

@@ -16,19 +16,35 @@ def start_conversation():
     """
     try:
         AGENT_ID = os.environ.get('AGENT_ID')
+        API_KEY = os.environ.get('ELEVENLABS_API_KEY')
+        
+        if not API_KEY:
+            print("Error: ELEVENLABS_API_KEY not set")
+            return None
+            
         if not AGENT_ID:
-            print("AGENT_ID not set, using default agent")
+            print("Error: AGENT_ID not set")
+            return None
+        
+        print(f"Initializing ElevenLabs conversation with Agent ID: {AGENT_ID[:8]}...")
         
         conversation = Conversation(
             client=client,
             agent_id=AGENT_ID,
             audio_interface=DefaultAudioInterface(),
-            requires_auth=bool(os.environ.get('ELEVENLABS_API_KEY')),
+            requires_auth=True,
         )
+        
+        print("Starting conversation session...")
         conversation.start_session()
+        print("Conversation session started successfully")
         return conversation
     except Exception as e:
         print(f"Error starting conversation: {str(e)}")
+        if "authentication" in str(e).lower():
+            print("Authentication error: Please check your ELEVENLABS_API_KEY")
+        elif "agent" in str(e).lower():
+            print("Agent error: Please check your AGENT_ID")
         return None
 
 def send_message(conversation, message):
