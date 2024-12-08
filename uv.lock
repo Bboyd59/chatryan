@@ -575,7 +575,6 @@ dependencies = [
     { name = "pypdf2" },
     { name = "sqlalchemy" },
     { name = "werkzeug" },
-    { name = "wtforms" },
 ]
 
 [package.metadata]
@@ -591,7 +590,6 @@ requires-dist = [
     { name = "pypdf2", specifier = ">=3.0.1" },
     { name = "sqlalchemy" },
     { name = "werkzeug" },
-    { name = "wtforms" },
 ]
 
 [[package]]

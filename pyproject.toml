@@ -15,5 +15,4 @@ dependencies = [
     "sqlalchemy",
     "werkzeug",
     "elevenlabs",
-    "wtforms",
 ]

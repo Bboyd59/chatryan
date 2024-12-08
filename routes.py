@@ -94,20 +94,6 @@ def process_message():
         'message_id': ai_message.id
     })
 
-@main_bp.route('/admin/delete-knowledge/<int:entry_id>', methods=['POST'])
-@login_required
-def delete_knowledge(entry_id):
-    if not current_user.is_admin:
-        return jsonify({'error': 'Access denied'}), 403
-        
-    try:
-        kb_entry = KnowledgeBase.query.get_or_404(entry_id)
-        db.session.delete(kb_entry)
-        db.session.commit()
-        return jsonify({'message': 'Entry deleted successfully'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
 @main_bp.route('/admin/upload-knowledge', methods=['POST'])
 @login_required
 def upload_knowledge():
