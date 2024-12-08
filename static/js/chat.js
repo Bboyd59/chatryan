@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         voiceToggle.classList.toggle('active', voiceEnabled);
         chatInput.placeholder = voiceEnabled ? 
             "Voice chat enabled - Type your message..." : 
-            "Message Jasper AI...";
+            "Message iRyan...";
     });
 
     // Auto-resize textarea
