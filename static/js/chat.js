@@ -8,14 +8,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const voiceToggle = document.querySelector('.voice-toggle');
     let voiceEnabled = false;
 
+    // Speech recognition setup
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    let isRecording = false;
+
     // Voice toggle functionality
     voiceToggle.addEventListener('click', () => {
-        voiceEnabled = !voiceEnabled;
-        voiceToggle.classList.toggle('active', voiceEnabled);
-        chatInput.placeholder = voiceEnabled ? 
-            "Voice chat enabled - Type your message..." : 
-            "Message iRyan...";
+        if (!isRecording) {
+            // Start recording
+            recognition.start();
+            isRecording = true;
+            voiceToggle.classList.add('recording');
+            chatInput.placeholder = "Listening...";
+        } else {
+            // Stop recording
+            recognition.stop();
+            isRecording = false;
+            voiceToggle.classList.remove('recording');
+            chatInput.placeholder = "Message iRyan...";
+        }
     });
+
+    // Handle speech recognition results
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        chatInput.value = transcript;
+        adjustTextareaHeight();
+        isRecording = false;
+        voiceToggle.classList.remove('recording');
+        chatInput.placeholder = "Message iRyan...";
+    };
+
+    recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        isRecording = false;
+        voiceToggle.classList.remove('recording');
+        chatInput.placeholder = "Message iRyan...";
+    };
 
     // Auto-resize textarea
     function adjustTextareaHeight() {

@@ -324,6 +324,15 @@ body {
     animation: pulse 1.5s infinite;
 }
 
+.voice-toggle.recording {
+    color: #ef4444;
+    animation: pulse 1.5s infinite;
+}
+
+.voice-toggle.recording svg {
+    fill: #ef4444;
+}
+
 @keyframes pulse {
     0% {
         transform: scale(1);
