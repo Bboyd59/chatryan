@@ -30,6 +30,7 @@ def create_app():
     
     # Configure app
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
+    app.config['WTF_CSRF_SECRET_KEY'] = os.environ.get("WTF_CSRF_SECRET_KEY") or app.secret_key
     
     # Set up database URL
     database_url = os.environ.get("DATABASE_URL")
