@@ -5,6 +5,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const chatForm = document.querySelector('.chat-form');
     const chatInput = document.querySelector('.chat-input');
+    const voiceToggle = document.querySelector('.voice-toggle');
+    let voiceEnabled = false;
+
+    // Voice toggle functionality
+    voiceToggle.addEventListener('click', () => {
+        voiceEnabled = !voiceEnabled;
+        voiceToggle.classList.toggle('active', voiceEnabled);
+        chatInput.placeholder = voiceEnabled ? 
+            "Voice chat enabled - Type your message..." : 
+            "Message Jasper AI...";
+    });
 
     // Auto-resize textarea
     function adjustTextareaHeight() {
@@ -102,6 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             appendMessage(data.response, false);
+            
+            // Handle audio response if voice is enabled
+            if (voiceEnabled && data.has_audio && data.audio) {
+                const audio = new Audio('data:audio/mpeg;base64,' + data.audio);
+                audio.play().catch(error => {
+                    console.error('Error playing audio:', error);
+                });
+            }
         } catch (error) {
             console.error('Error:', error);
             // Remove typing indicator

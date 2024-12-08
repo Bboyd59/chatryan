@@ -289,6 +289,39 @@ body {
     font-weight: 450;
 }
 
+.input-wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.voice-toggle {
+    position: absolute;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.voice-toggle:hover {
+    color: var(--accent);
+}
+
+.voice-toggle.active {
+    color: var(--accent);
+}
+
+.voice-toggle svg {
+    width: 20px;
+    height: 20px;
+}
 .chat-input:focus {
     outline: none;
     border-color: var(--accent);
