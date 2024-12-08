@@ -82,39 +82,29 @@ def process_message():
             print(f"Error in voice processing: {str(e)}")
             return jsonify({'error': str(e)}), 500
     
-    # Fallback to Claude or if voice is not enabled
-    complete_response = []
-    
-    def generate():
-        from flask import current_app
+    try:
+        # Save user message
+        db.session.add(user_message)
+        db.session.commit()
         
-        # Use application context for database operations
-        with current_app.app_context():
-            # Save user message
-            db.session.add(user_message)
-            db.session.commit()
-            
-            # Initialize AI message
-            ai_message = Message(chat_id=chat.id, content="", is_user=False)
-            db.session.add(ai_message)
-            db.session.commit()
-            
-            try:
-                # Stream the response
-                for chunk in get_claude_response(message):
-                    complete_response.append(chunk)
-                    yield f"data: {chunk}\n\n"
-                    
-                # Update AI message with complete response
-                ai_message.content = "".join(complete_response)
-                db.session.commit()
-                yield f"data: [DONE]\n\n"
-            except Exception as e:
-                print(f"Error in generate(): {str(e)}")
-                yield f"data: Error processing message\n\n"
-                yield f"data: [DONE]\n\n"
-    
-    return Response(generate(), mimetype='text/event-stream')
+        # Get AI response
+        ai_response = get_claude_response(message)
+        
+        # Save AI message
+        ai_message = Message(chat_id=chat.id, content=ai_response, is_user=False)
+        db.session.add(ai_message)
+        db.session.commit()
+        
+        return jsonify({
+            'response': ai_response,
+            'message_id': ai_message.id
+        })
+        
+    except Exception as e:
+        print(f"Error processing message: {str(e)}")
+        return jsonify({
+            'error': 'Error processing your message. Please try again.'
+        }), 500
 
 @main_bp.route('/admin/upload-knowledge', methods=['POST'])
 @login_required

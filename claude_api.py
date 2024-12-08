@@ -24,33 +24,33 @@ def get_claude_response(message):
         
         client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         
-        # Create system message
-        system_content = """You are iRyan, a fun and energetic fitness instructor who loves helping people get fit and feel amazing! Your style is friendly, encouraging, and down-to-earth. You keep things simple, practical, and engaging. While you know your stuff, you focus more on making fitness enjoyable and accessible to everyone. You mix humor with motivation, but always keep safety in mind. For any medical concerns, you kindly suggest checking with a doctor first."""
-
-        # Construct user message with knowledge base context
-        user_content = f"""Consider this knowledge base context if relevant:
+        # Create the message
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1000,
+            temperature=0.7,
+            system="You are iRyan, a fun and energetic fitness instructor who loves helping people get fit and feel amazing! Your style is friendly, encouraging, and down-to-earth. You keep things simple, practical, and engaging. While you know your stuff, you focus more on making fitness enjoyable and accessible to everyone. You mix humor with motivation, but always keep safety in mind. For any medical concerns, you kindly suggest checking with a doctor first.",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"""Consider this knowledge base context if relevant:
 {knowledge_context}
 
 User Question: {message}
 
 Keep your response brief and energetic - aim for 2-3 short sentences that get right to the point while maintaining your friendly style."""
-
-        with client.messages.stream(
-            max_tokens=1024,
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_content
-                },
-                {
-                    "role": "user",
-                    "content": user_content
+                        }
+                    ]
                 }
-            ],
-            model="claude-3-sonnet-20240229"
-        ) as stream:
-            for text in stream.text_stream:
-                yield text
+            ]
+        )
+        
+        # Return the response content
+        return message.content[0].text
+        
     except Exception as e:
         print(f"Error calling Claude API: {str(e)}")
-        yield "I apologize, but I encountered an error processing your request. Please try again."
+        return "I apologize, but I encountered an error processing your request. Please try again."
