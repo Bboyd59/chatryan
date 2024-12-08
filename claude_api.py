@@ -36,17 +36,15 @@ User Question: {message}
 Provide a concise, practical response. If using general knowledge, make that clear."""
 
         # Use streaming for the response
-        stream = client.messages.stream(
+        response_chunks = []
+        with client.messages.stream(
             model="claude-3-sonnet-20240229",
             max_tokens=1024,
             system=system_prompt,
             messages=[{"role": "user", "content": full_prompt}]
-        )
-        
-        response_chunks = []
-        for chunk in stream:
-            if chunk.type == "content_block_delta":
-                response_chunks.append(chunk.text)
+        ) as stream:
+            for chunk in stream.text_stream:
+                response_chunks.append(chunk)
             
         return "".join(response_chunks)
     except Exception as e:
