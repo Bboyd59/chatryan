@@ -83,13 +83,18 @@ def process_message():
             return jsonify({'error': str(e)}), 500
     
     # Fallback to Claude or if voice is not enabled
+    complete_response = []
+    
     def generate():
         for chunk in get_claude_response(message):
+            complete_response.append(chunk)
             yield f"data: {chunk}\n\n"
-    
-    ai_message = Message(chat_id=chat.id, content="", is_user=False)
-    db.session.add(ai_message)
-    db.session.commit()
+        
+        # Save the complete message after streaming is done
+        ai_message = Message(chat_id=chat.id, content="".join(complete_response), is_user=False)
+        db.session.add(ai_message)
+        db.session.commit()
+        yield f"data: [DONE]\n\n"
     
     return Response(generate(), mimetype='text/event-stream')
 
