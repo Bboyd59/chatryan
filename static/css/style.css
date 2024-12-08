@@ -181,7 +181,7 @@ body {
 }
 
 .ai-message {
-    background-color: var(--bg-secondary);
+    background: none;
     align-self: flex-start;
     margin-right: 20%;
 }

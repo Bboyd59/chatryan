@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify, request, send_file, session
+from flask import Blueprint, render_template, jsonify, request, send_file, session, Response
 import PyPDF2
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
