@@ -1,4 +1,6 @@
 import os
+import signal
+import sys
 from elevenlabs.client import ElevenLabs
 from elevenlabs.conversational_ai.conversation import Conversation
 from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
@@ -6,19 +8,22 @@ from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInt
 # Initialize ElevenLabs client
 client = ElevenLabs(api_key=os.environ.get('ELEVENLABS_API_KEY'))
 
-def start_conversation(agent_id=None):
+def start_conversation():
     """
     Start a new conversational AI session
-    Args:
-        agent_id (str): Optional agent ID to use
     Returns:
-        tuple: (conversation_id, conversation)
+        Conversation: Active conversation instance
     """
     try:
+        AGENT_ID = os.environ.get('AGENT_ID')
+        if not AGENT_ID:
+            print("AGENT_ID not set, using default agent")
+        
         conversation = Conversation(
             client=client,
-            agent_id=agent_id or os.environ.get('AGENT_ID'),
+            agent_id=AGENT_ID,
             audio_interface=DefaultAudioInterface(),
+            requires_auth=bool(os.environ.get('ELEVENLABS_API_KEY')),
         )
         conversation.start_session()
         return conversation
@@ -35,11 +40,16 @@ def send_message(conversation, message):
     Returns:
         dict: Response containing audio and text
     """
+    if not conversation:
+        return None
+        
     try:
         response = conversation.send_message(message)
+        # Get both text and audio from the response
         return {
             'text': response.text,
-            'audio': response.audio
+            'audio': response.audio.decode('utf-8') if response.audio else None,
+            'conversation_id': conversation.conversation_id
         }
     except Exception as e:
         print(f"Error sending message: {str(e)}")
@@ -51,7 +61,18 @@ def end_conversation(conversation):
     Args:
         conversation: Active conversation instance
     """
+    if not conversation:
+        return
+        
     try:
         conversation.end_session()
+        print(f"Conversation ID: {conversation.conversation_id}")
     except Exception as e:
         print(f"Error ending conversation: {str(e)}")
+
+# Handle graceful shutdown
+def signal_handler(sig, frame):
+    print("\nGracefully shutting down...")
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)

@@ -30,38 +30,45 @@ def process_message():
     user_message = Message(chat_id=chat.id, content=message, is_user=True)
     db.session.add(user_message)
     
-    # Initialize or get existing conversation
-    conversation = session.get('eleven_conversation')
-    if not conversation:
-        conversation = start_conversation()
-        session['eleven_conversation'] = conversation
+    # Check if voice mode is enabled
+    voice_enabled = request.json.get('voice_enabled', False)
     
-    # Get ElevenLabs conversational response
-    response = send_message(conversation, message)
+    if voice_enabled:
+        # Initialize or get existing conversation
+        conversation = session.get('eleven_conversation')
+        if not conversation:
+            conversation = start_conversation()
+            if not conversation:
+                return jsonify({'error': 'Failed to start ElevenLabs conversation'}), 500
+            session['eleven_conversation'] = conversation
+        
+        # Get ElevenLabs conversational response
+        response = send_message(conversation, message)
+        
+        if response and response.get('text'):
+            ai_message = Message(chat_id=chat.id, content=response['text'], is_user=False)
+            db.session.add(ai_message)
+            db.session.commit()
+            
+            return jsonify({
+                'response': response['text'],
+                'has_audio': bool(response.get('audio')),
+                'message_id': ai_message.id,
+                'audio': response.get('audio'),
+                'conversation_id': response.get('conversation_id')
+            })
     
-    if response:
-        ai_message = Message(chat_id=chat.id, content=response['text'], is_user=False)
-        db.session.add(ai_message)
-        db.session.commit()
-        
-        return jsonify({
-            'response': response['text'],
-            'has_audio': True,
-            'message_id': ai_message.id,
-            'audio': response['audio']
-        })
-    else:
-        # Fallback to Claude if ElevenLabs fails
-        claude_response = get_claude_response(message)
-        ai_message = Message(chat_id=chat.id, content=claude_response, is_user=False)
-        db.session.add(ai_message)
-        db.session.commit()
-        
-        return jsonify({
-            'response': claude_response,
-            'has_audio': False,
-            'message_id': ai_message.id
-        })
+    # Fallback to Claude or if voice is not enabled
+    claude_response = get_claude_response(message)
+    ai_message = Message(chat_id=chat.id, content=claude_response, is_user=False)
+    db.session.add(ai_message)
+    db.session.commit()
+    
+    return jsonify({
+        'response': claude_response,
+        'has_audio': False,
+        'message_id': ai_message.id
+    })
 
 @main_bp.route('/admin/upload-knowledge', methods=['POST'])
 @login_required
