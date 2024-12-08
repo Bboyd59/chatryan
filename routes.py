@@ -3,8 +3,11 @@ import PyPDF2
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
-from elevenlabs_api import start_conversation, send_message, end_conversation
+from elevenlabs.client import ElevenLabs
+from elevenlabs.conversational_ai.conversation import Conversation
+from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
 import io
+import os
 
 main_bp = Blueprint('main', __name__)
 
@@ -36,44 +39,65 @@ def process_message():
     if voice_enabled:
         print("Voice mode enabled, initializing ElevenLabs conversation...")
         
-        # Initialize or get existing conversation
-        conversation = session.get('eleven_conversation')
-        if not conversation:
-            print("No existing conversation found, starting new one...")
-            conversation = start_conversation()
-            if not conversation:
-                error_msg = "Failed to start ElevenLabs conversation. Please check API key and Agent ID."
+        try:
+            AGENT_ID = os.getenv('AGENT_ID')
+            API_KEY = os.getenv('ELEVENLABS_API_KEY')
+            
+            if not AGENT_ID:
+                error_msg = "AGENT_ID environment variable must be set"
                 print(error_msg)
                 return jsonify({'error': error_msg}), 500
-            session['eleven_conversation'] = conversation
-            print("New conversation started successfully")
-        else:
-            print("Using existing conversation session")
-        
-        # Get ElevenLabs conversational response
-        print("Sending message to ElevenLabs...")
-        response = send_message(conversation, message)
-        
-        if not response:
-            error_msg = "Failed to get response from ElevenLabs"
+            
+            # Initialize or get existing conversation
+            conversation = session.get('eleven_conversation')
+            if not conversation:
+                print("Creating new ElevenLabs conversation...")
+                client = ElevenLabs(api_key=API_KEY)
+                conversation = Conversation(
+                    client=client,
+                    agent_id=AGENT_ID,
+                    audio_interface=DefaultAudioInterface(),
+                    requires_auth=bool(API_KEY)
+                )
+                
+                # Set up callbacks
+                conversation.callback_agent_response = lambda response: print(f"Agent: {response}")
+                conversation.callback_agent_response_correction = lambda original, corrected: print(f"Agent: {original} -> {corrected}")
+                conversation.callback_user_transcript = lambda transcript: print(f"User: {transcript}")
+                
+                print("Starting conversation session...")
+                conversation.start_session()
+                session['eleven_conversation'] = conversation
+                print("New conversation started successfully")
+            
+            # Send message and get response
+            print(f"Sending message to ElevenLabs: {message}")
+            response = conversation.send_message(message)
+            
+            if response:
+                print("Received response from ElevenLabs")
+                ai_message = Message(chat_id=chat.id, content=response.text, is_user=False)
+                db.session.add(ai_message)
+                db.session.commit()
+                
+                response_data = {
+                    'response': response.text,
+                    'has_audio': bool(response.audio),
+                    'message_id': ai_message.id,
+                    'audio': response.audio.decode('utf-8') if response.audio else None,
+                    'conversation_id': conversation.conversation_id
+                }
+                print(f"Audio available: {bool(response.audio)}")
+                return jsonify(response_data)
+            else:
+                error_msg = "No response received from ElevenLabs"
+                print(error_msg)
+                return jsonify({'error': error_msg}), 500
+                
+        except Exception as e:
+            error_msg = f"Error in ElevenLabs conversation: {str(e)}"
             print(error_msg)
             return jsonify({'error': error_msg}), 500
-            
-        if response.get('text'):
-            print("Received response from ElevenLabs")
-            ai_message = Message(chat_id=chat.id, content=response['text'], is_user=False)
-            db.session.add(ai_message)
-            db.session.commit()
-            
-            response_data = {
-                'response': response['text'],
-                'has_audio': bool(response.get('audio')),
-                'message_id': ai_message.id,
-                'audio': response.get('audio'),
-                'conversation_id': response.get('conversation_id')
-            }
-            print(f"Audio available: {response_data['has_audio']}")
-            return jsonify(response_data)
     
     # Fallback to Claude or if voice is not enabled
     claude_response = get_claude_response(message)
