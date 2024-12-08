@@ -43,9 +43,9 @@ Keep your response brief and energetic - aim for 2-3 short sentences that get ri
             system=system_prompt,
             messages=[{"role": "user", "content": full_prompt}]
         ) as stream:
-            for chunk in stream.text_stream:
-                response_chunks.append(chunk)
-            
+            for text in stream.text_stream:
+                response_chunks.append(text)
+                
         return "".join(response_chunks)
     except Exception as e:
         print(f"Error calling Claude API: {str(e)}")
