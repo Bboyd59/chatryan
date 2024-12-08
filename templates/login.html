@@ -11,14 +11,14 @@
         {% endif %}
     {% endwith %}
     <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next', '')) }}">
-        {{ form.csrf_token if form }}
+        {{ form.csrf_token }}
         <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" required autofocus>
+            {{ form.email.label }}
+            {{ form.email(class="form-control", required=true, autofocus=true) }}
         </div>
         <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
+            {{ form.password.label }}
+            {{ form.password(class="form-control", required=true) }}
         </div>
         <button type="submit" class="btn">Login</button>
     </form>

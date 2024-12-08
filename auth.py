@@ -17,17 +17,22 @@ def login():
         return redirect(url_for('main.chat'))
     
     form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        
-        if user and user.check_password(form.password.data):
-            login_user(user)
-            next_page = request.args.get('next')
-            if not next_page or not next_page.startswith('/'):
-                next_page = url_for('main.chat')
-            return redirect(next_page)
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            user = User.query.filter_by(email=form.email.data).first()
             
-        flash('Invalid email or password')
+            if user and user.check_password(form.password.data):
+                login_user(user)
+                next_page = request.args.get('next')
+                if not next_page or not next_page.startswith('/'):
+                    next_page = url_for('main.chat')
+                return redirect(next_page)
+                
+            flash('Invalid email or password')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f'{field}: {error}')
     
     return render_template('login.html', form=form)
 
