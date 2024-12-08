@@ -110,10 +110,10 @@ body {
 }
 .app-header {
     width: 100%;
-    padding: 0.5rem;
+    padding: 1rem;
     background-color: var(--bg-primary);
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .logo-container {
@@ -125,7 +125,7 @@ body {
 }
 
 .app-logo {
-    height: 60px;
+    height: 100px;
     width: auto;
     transition: transform 0.3s ease;
     filter: brightness(1.1) contrast(1.1);
