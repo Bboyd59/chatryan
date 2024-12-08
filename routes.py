@@ -86,13 +86,22 @@ def process_message():
     complete_response = []
     
     def generate():
+        # Save user message first
+        db.session.add(user_message)
+        db.session.commit()
+        
+        # Initialize AI message with empty content
+        ai_message = Message(chat_id=chat.id, content="", is_user=False)
+        db.session.add(ai_message)
+        db.session.commit()
+        
+        # Stream the response
         for chunk in get_claude_response(message):
             complete_response.append(chunk)
             yield f"data: {chunk}\n\n"
         
-        # Save the complete message after streaming is done
-        ai_message = Message(chat_id=chat.id, content="".join(complete_response), is_user=False)
-        db.session.add(ai_message)
+        # Update the AI message with complete response
+        ai_message.content = "".join(complete_response)
         db.session.commit()
         yield f"data: [DONE]\n\n"
     
