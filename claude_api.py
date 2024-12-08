@@ -33,7 +33,7 @@ def get_claude_response(message):
 
 User Question: {message}
 
-Provide a concise, practical response. If using general knowledge, make that clear."""
+Keep your response brief and energetic - aim for 2-3 short sentences that get right to the point while maintaining your friendly style."""
 
         # Use streaming for the response
         response_chunks = []
