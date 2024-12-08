@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, render_template, jsonify, request, send_file, session
 import PyPDF2
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
 from claude_api import get_claude_response
+from elevenlabs_api import start_conversation, send_message, end_conversation
+import io
 
 main_bp = Blueprint('main', __name__)
 
@@ -28,29 +30,38 @@ def process_message():
     user_message = Message(chat_id=chat.id, content=message, is_user=True)
     db.session.add(user_message)
     
-    # Search knowledge base first
-    kb_entries = KnowledgeBase.query.all()
-    relevant_info = ""
+    # Initialize or get existing conversation
+    conversation = session.get('eleven_conversation')
+    if not conversation:
+        conversation = start_conversation()
+        session['eleven_conversation'] = conversation
     
-    for entry in kb_entries:
-        if any(keyword.lower() in entry.content.lower() for keyword in message.split()):
-            relevant_info += f"\n\nRelevant information from knowledge base: {entry.content}"
+    # Get ElevenLabs conversational response
+    response = send_message(conversation, message)
     
-    # Get Claude's response with context from knowledge base
-    if relevant_info:
-        context = f"Please use this additional context while answering: {relevant_info}\n\nUser question: {message}"
-        claude_response = get_claude_response(context)
+    if response:
+        ai_message = Message(chat_id=chat.id, content=response['text'], is_user=False)
+        db.session.add(ai_message)
+        db.session.commit()
+        
+        return jsonify({
+            'response': response['text'],
+            'has_audio': True,
+            'message_id': ai_message.id,
+            'audio': response['audio']
+        })
     else:
+        # Fallback to Claude if ElevenLabs fails
         claude_response = get_claude_response(message)
-    
-    ai_message = Message(chat_id=chat.id, content=claude_response, is_user=False)
-    db.session.add(ai_message)
-    
-    db.session.commit()
-    
-    return jsonify({
-        'response': claude_response
-    })
+        ai_message = Message(chat_id=chat.id, content=claude_response, is_user=False)
+        db.session.add(ai_message)
+        db.session.commit()
+        
+        return jsonify({
+            'response': claude_response,
+            'has_audio': False,
+            'message_id': ai_message.id
+        })
 
 @main_bp.route('/admin/upload-knowledge', methods=['POST'])
 @login_required
@@ -104,3 +115,20 @@ def admin():
     chats = Chat.query.all()
     knowledge_base = KnowledgeBase.query.order_by(KnowledgeBase.updated_at.desc()).all()
     return render_template('admin.html', users=users, chats=chats, knowledge_base=knowledge_base)
+
+@main_bp.route('/api/audio-response/<int:message_id>')
+@login_required
+def get_audio_response(message_id):
+    message = Message.query.get_or_404(message_id)
+    if message.chat.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    audio_data = text_to_speech(message.content)
+    if audio_data:
+        return send_file(
+            io.BytesIO(audio_data),
+            mimetype='audio/mpeg',
+            as_attachment=True,
+            download_name='response.mp3'
+        )
+    return jsonify({'error': 'Failed to generate audio'}), 500
