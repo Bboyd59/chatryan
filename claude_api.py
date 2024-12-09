@@ -43,7 +43,13 @@ def get_claude_response(message):
             ]
         )
         
-        return response.content
+        # Extract the text from the response content
+        if isinstance(response.content, list):
+            # Handle case where content is a list of blocks
+            return response.content[0].text
+        else:
+            # Handle case where content is a single block
+            return response.content.text
         
     except Exception as e:
         print(f"Error calling Claude API: {str(e)}")

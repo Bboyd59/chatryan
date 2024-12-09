@@ -90,10 +90,14 @@ def process_message():
         # Get AI response
         ai_response = get_claude_response(message)
         
-        # Save AI message
-        ai_message = Message(chat_id=chat.id, content=ai_response, is_user=False)
-        db.session.add(ai_message)
-        db.session.commit()
+        # Ensure we have a string response before saving to database
+        if isinstance(ai_response, str):
+            # Save AI message
+            ai_message = Message(chat_id=chat.id, content=ai_response, is_user=False)
+            db.session.add(ai_message)
+            db.session.commit()
+        else:
+            raise ValueError("Invalid response format from AI")
         
         return jsonify({
             'response': ai_response,
