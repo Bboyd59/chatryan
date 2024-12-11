@@ -707,7 +707,9 @@ body {
     }
 
     .app-logo {
-        height: 60px;
+        height: 50px;
+        width: auto;
+        object-fit: contain;
     }
 
     .btn-primary {
