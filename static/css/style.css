@@ -121,10 +121,11 @@ body {
 }
 
 .app-logo {
-    height: 100px;
+    height: 80px;
     width: auto;
     transition: transform 0.3s ease;
-    filter: brightness(1.1) contrast(1.1);
+    filter: brightness(1.05) contrast(1.05);
+    object-fit: contain;
 }
 
 .app-logo:hover {
