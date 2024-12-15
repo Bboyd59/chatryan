@@ -37,10 +37,10 @@
 .message-container {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.15rem;
     max-width: 80%;
     animation: fadeIn 0.3s ease;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 .message-container.user {
@@ -52,9 +52,9 @@
 }
 
 .message-bubble {
-    padding: 0.75rem 1.25rem;
+    padding: 0.5rem 1rem;
     font-size: 0.95rem;
-    line-height: 1.5;
+    line-height: 1.4;
     letter-spacing: -0.011em;
     font-weight: 450;
 }
