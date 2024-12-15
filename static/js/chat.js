@@ -128,86 +128,32 @@ document.addEventListener('DOMContentLoaded', () => {
         messageContainer.scrollTop = messageContainer.scrollHeight;
 
         try {
-            // First send the message
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    message: message,
-                    voice_enabled: voiceEnabled
+                body: JSON.stringify({ 
+                    message,
+                    voice_enabled: voiceEnabled 
                 })
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('Network response was not ok');
             }
 
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: message,
-                    voice_enabled: voiceEnabled
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let currentMessageDiv;
-
-            while (true) {
-                const {value, done} = await reader.read();
-                if (done) break;
-                
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-                
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(6));
-                            
-                            if (data.error) {
-                                console.error('Server error:', data.error);
-                                appendMessage('Error: ' + data.error, false);
-                                return;
-                            }
-
-                            if (data.chunk) {
-                                if (!currentMessageDiv) {
-                                    currentMessageDiv = document.createElement('div');
-                                    currentMessageDiv.className = 'message ai-message';
-                                    messageContainer.appendChild(currentMessageDiv);
-                                }
-                                currentMessageDiv.textContent += data.chunk;
-                                messageContainer.scrollTop = messageContainer.scrollHeight;
-                            }
-
-                            if (data.message_id) {
-                                // Message complete, stop reading
-                                return;
-                            }
-                        } catch (error) {
-                            console.error('Error parsing message:', error);
-                        }
-                    }
-                }
-            }
-
-        } catch (error) {
-            console.error('Error:', error);
-            appendMessage('Error: Failed to send message. Please try again.', false);
-        } finally {
             // Remove typing indicator
             typingIndicator.remove();
+
+            const data = await response.json();
+            appendMessage(data.response, false);
+            
+            if (data.error) {
+                console.error('Server error:', data.error);
+                appendMessage('Error: ' + data.error, false);
+                return;
+            }
             
             // Handle audio response if voice is enabled
             if (voiceEnabled) {
@@ -245,6 +191,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     appendMessage('Voice response not available. Please try again.', false);
                 }
             }
+        } catch (error) {
+            console.error('Error:', error);
+            // Remove typing indicator
+            typingIndicator.remove();
+            appendMessage('Sorry, there was an error processing your message.', false);
         }
     });
 
