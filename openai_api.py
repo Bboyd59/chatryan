@@ -10,8 +10,8 @@ def get_openai_response(message, stream=False):
     try:
         client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        return client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
@@ -25,8 +25,6 @@ def get_openai_response(message, stream=False):
             stream=stream,
             temperature=0.7,
         )
-        
-        return response
 
     except Exception as e:
         print(f"Error calling OpenAI API: {str(e)}")

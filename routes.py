@@ -90,25 +90,28 @@ def process_message():
         
         def generate_streaming_response():
             try:
-                response = get_openai_response(message, stream=True)
-                if not response:
+                stream = get_openai_response(message, stream=True)
+                if not stream:
                     yield f'data: {json.dumps({"error": "Failed to get response from AI"})}\n\n'
                     return
 
                 full_response = ""
-                for chunk in response:
+                for chunk in stream:
                     if chunk.choices[0].delta.content is not None:
                         content = chunk.choices[0].delta.content
                         full_response += content
                         yield f'data: {json.dumps({"chunk": content})}\n\n'
                 
-                # Save the complete message to database after streaming
-                ai_message = Message(chat_id=chat.id, content=full_response, is_user=False)
-                db.session.add(ai_message)
-                db.session.commit()
-                
-                # Send the message ID as the final chunk
-                yield f'data: {json.dumps({"message_id": ai_message.id})}\n\n'
+                if full_response:
+                    # Save the complete message to database after streaming
+                    ai_message = Message(chat_id=chat.id, content=full_response, is_user=False)
+                    db.session.add(ai_message)
+                    db.session.commit()
+                    
+                    # Send the message ID as the final chunk
+                    yield f'data: {json.dumps({"message_id": ai_message.id})}\n\n'
+                else:
+                    yield f'data: {json.dumps({"error": "No response content received"})}\n\n'
             except Exception as e:
                 print(f"Streaming error: {str(e)}")
                 yield f'data: {json.dumps({"error": str(e)})}\n\n'

@@ -140,8 +140,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            // Create EventSource for streaming response
-            const eventSource = new EventSource(`/api/chat`);
+            // Remove the existing EventSource if any
+            if (window.currentEventSource) {
+                window.currentEventSource.close();
+            }
+
+            // Create new EventSource for streaming response
+            const eventSource = new EventSource('/api/chat');
+            window.currentEventSource = eventSource;
             let currentMessageDiv;
 
             eventSource.onmessage = (event) => {
@@ -167,6 +173,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.message_id) {
                     // Final message received, close the connection
                     eventSource.close();
+                    delete window.currentEventSource;
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                console.error('EventSource error:', error);
+                eventSource.close();
+                delete window.currentEventSource;
+                if (!currentMessageDiv || !currentMessageDiv.textContent) {
+                    appendMessage('Error: Connection lost. Please try again.', false);
                 }
             };
 
