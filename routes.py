@@ -6,6 +6,7 @@ from openai_api import get_openai_response
 import elevenlabs_api
 import io
 import os
+import json
 
 main_bp = Blueprint('main', __name__)
 
@@ -88,25 +89,29 @@ def process_message():
         db.session.commit()
         
         def generate_streaming_response():
-            response = get_openai_response(message, stream=True)
-            if not response:
-                yield 'data: {"error": "Failed to get response from AI"}\n\n'
-                return
+            try:
+                response = get_openai_response(message, stream=True)
+                if not response:
+                    yield f'data: {json.dumps({"error": "Failed to get response from AI"})}\n\n'
+                    return
 
-            full_response = ""
-            for chunk in response:
-                if chunk.choices[0].delta.content is not None:
-                    content = chunk.choices[0].delta.content
-                    full_response += content
-                    yield f'data: {{"chunk": {json.dumps(content)}}}\n\n'
-            
-            # Save the complete message to database after streaming
-            ai_message = Message(chat_id=chat.id, content=full_response, is_user=False)
-            db.session.add(ai_message)
-            db.session.commit()
-            
-            # Send the message ID as the final chunk
-            yield f'data: {{"message_id": {ai_message.id}}}\n\n'
+                full_response = ""
+                for chunk in response:
+                    if chunk.choices[0].delta.content is not None:
+                        content = chunk.choices[0].delta.content
+                        full_response += content
+                        yield f'data: {json.dumps({"chunk": content})}\n\n'
+                
+                # Save the complete message to database after streaming
+                ai_message = Message(chat_id=chat.id, content=full_response, is_user=False)
+                db.session.add(ai_message)
+                db.session.commit()
+                
+                # Send the message ID as the final chunk
+                yield f'data: {json.dumps({"message_id": ai_message.id})}\n\n'
+            except Exception as e:
+                print(f"Streaming error: {str(e)}")
+                yield f'data: {json.dumps({"error": str(e)})}\n\n'
         
         return Response(
             generate_streaming_response(),

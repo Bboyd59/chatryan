@@ -129,7 +129,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Create EventSource for streaming response
-            const eventSource = new EventSource(`/api/chat?message=${encodeURIComponent(message)}`);
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    voice_enabled: voiceEnabled
+                })
+            });
+
+            // Create EventSource for streaming response
+            const eventSource = new EventSource(`/api/chat`);
             let currentMessageDiv;
 
             eventSource.onmessage = (event) => {
