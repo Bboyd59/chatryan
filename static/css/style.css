@@ -167,25 +167,27 @@ body {
 }
 
 .message {
-    padding: 1rem;
-    margin: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin: 0.25rem;
     max-width: 80%;
     animation: fadeIn 0.3s ease-in;
-    line-height: 1.6;
-    border-radius: 1rem;
+    line-height: 1.5;
+    border-radius: 0.75rem;
 }
 
 .user-message {
     background-color: var(--accent);
     color: white;
     align-self: flex-end;
-    margin-left: 20%;
+    margin-left: 15%;
+    font-size: 0.95rem;
 }
 
 .ai-message {
     background: none;
     align-self: flex-start;
-    margin-right: 20%;
+    margin-right: 15%;
+    font-size: 0.95rem;
 }
 
 .input-container {
