@@ -23,11 +23,12 @@ def get_claude_response(message):
         
         client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         
-        # Create the message
-        response = client.chat.completions.create(
+        # Create the message with streaming
+        stream = client.chat.completions.create(
             model="gpt-4",
             max_tokens=1000,
             temperature=0.7,
+            stream=True,
             messages=[
                 {
                     "role": "system",
@@ -40,8 +41,13 @@ def get_claude_response(message):
             ]
         )
         
-        # Extract the text from the response
-        return response.choices[0].message.content
+        # Collect the streamed response
+        response_text = ""
+        for chunk in stream:
+            if chunk.choices[0].delta.content is not None:
+                response_text += chunk.choices[0].delta.content
+        
+        return response_text
         
     except Exception as e:
         print(f"Error calling Claude API: {str(e)}")
