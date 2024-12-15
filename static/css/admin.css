@@ -122,9 +122,25 @@ tr:last-child td {
     align-items: center;
 }
 
-.file-input {
+.file-input, .text-input {
     padding: 0.5rem;
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     background: var(--bg-primary);
+}
+
+.text-form {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.text-form textarea {
+    min-height: 100px;
+    resize: vertical;
+    width: 300px;
+}
+
+.text-form input[type="text"] {
+    width: 200px;
 }

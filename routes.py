@@ -164,6 +164,38 @@ def upload_knowledge():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@main_bp.route('/admin/add-text-knowledge', methods=['POST'])
+@login_required
+def add_text_knowledge():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+        
+    data = request.json
+    title = data.get('title')
+    content = data.get('content')
+    
+    if not title or not content:
+        return jsonify({'error': 'Title and content are required'}), 400
+    
+    try:
+        # Create knowledge base entry
+        kb_entry = KnowledgeBase(
+            title=title,
+            content=content,
+            content_type='text'
+        )
+        
+        db.session.add(kb_entry)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Text entry added successfully',
+            'entry': kb_entry.to_dict()
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @main_bp.route('/admin')
 @login_required
 def admin():

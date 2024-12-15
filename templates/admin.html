@@ -75,6 +75,11 @@
                 <input type="file" id="pdfFile" accept=".pdf" class="file-input">
                 <button type="button" class="btn" onclick="uploadPDF()">Upload PDF</button>
             </form>
+            <form id="textForm" class="text-form">
+                <input type="text" id="textTitle" placeholder="Title" class="text-input" required>
+                <textarea id="textContent" placeholder="Enter FAQ or information..." class="text-input" required></textarea>
+                <button type="button" class="btn" onclick="addTextEntry()">Add Text Entry</button>
+            </form>
         </div>
         <table>
             <thead>
@@ -191,6 +196,46 @@ async function uploadPDF() {
         }
     } catch (error) {
         alert('Error uploading file');
+        console.error(error);
+    }
+}
+async function addTextEntry() {
+    const titleInput = document.getElementById('textTitle');
+    const contentInput = document.getElementById('textContent');
+    
+    const title = titleInput.value.trim();
+    const content = contentInput.value.trim();
+    
+    if (!title || !content) {
+        alert('Please fill in both title and content');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/add-text-knowledge', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: title,
+                content: content
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('Text entry added successfully');
+            location.reload(); // Refresh to show new entry
+            // Clear the form
+            titleInput.value = '';
+            contentInput.value = '';
+        } else {
+            alert(data.error || 'Failed to add text entry');
+        }
+    } catch (error) {
+        alert('Error adding text entry');
         console.error(error);
     }
 }
