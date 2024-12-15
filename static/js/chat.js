@@ -144,51 +144,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            // Create EventSource for streaming response
-            const eventSource = new EventSource('/api/chat');
-            window.currentEventSource = eventSource;
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    voice_enabled: voiceEnabled
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
             let currentMessageDiv;
 
-            eventSource.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    
-                    if (data.error) {
-                        console.error('Server error:', data.error);
-                        appendMessage('Error: ' + data.error, false);
-                        eventSource.close();
-                        return;
-                    }
+            while (true) {
+                const {value, done} = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            
+                            if (data.error) {
+                                console.error('Server error:', data.error);
+                                appendMessage('Error: ' + data.error, false);
+                                return;
+                            }
 
-                    if (data.chunk) {
-                        if (!currentMessageDiv) {
-                            currentMessageDiv = document.createElement('div');
-                            currentMessageDiv.className = 'message ai-message';
-                            messageContainer.appendChild(currentMessageDiv);
+                            if (data.chunk) {
+                                if (!currentMessageDiv) {
+                                    currentMessageDiv = document.createElement('div');
+                                    currentMessageDiv.className = 'message ai-message';
+                                    messageContainer.appendChild(currentMessageDiv);
+                                }
+                                currentMessageDiv.textContent += data.chunk;
+                                messageContainer.scrollTop = messageContainer.scrollHeight;
+                            }
+
+                            if (data.message_id) {
+                                // Message complete, stop reading
+                                return;
+                            }
+                        } catch (error) {
+                            console.error('Error parsing message:', error);
                         }
-                        currentMessageDiv.textContent += data.chunk;
-                        messageContainer.scrollTop = messageContainer.scrollHeight;
                     }
-
-                    if (data.message_id) {
-                        // Final message received, close the connection
-                        eventSource.close();
-                        delete window.currentEventSource;
-                    }
-                } catch (error) {
-                    console.error('Error parsing message:', error);
-                    eventSource.close();
                 }
-            };
-
-            eventSource.onerror = (error) => {
-                console.error('EventSource error:', error);
-                eventSource.close();
-                delete window.currentEventSource;
-                if (!currentMessageDiv || !currentMessageDiv.textContent) {
-                    appendMessage('Error: Connection lost. Please try again.', false);
-                }
-            };
+            }
 
         } catch (error) {
             console.error('Error:', error);
