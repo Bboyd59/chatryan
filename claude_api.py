@@ -21,7 +21,10 @@ def get_claude_response(message):
         # Search knowledge base for relevant information
         knowledge_context = search_knowledge_base(message)
         
-        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+        api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise Exception("OPENAI_API_KEY environment variable is not set")
+client = OpenAI(api_key=api_key)
         
         # Create the message with streaming
         stream = client.chat.completions.create(
