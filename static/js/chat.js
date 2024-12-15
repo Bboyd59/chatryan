@@ -128,32 +128,44 @@ document.addEventListener('DOMContentLoaded', () => {
         messageContainer.scrollTop = messageContainer.scrollHeight;
 
         try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    message,
-                    voice_enabled: voiceEnabled 
-                })
-            });
+            // Create EventSource for streaming response
+            const eventSource = new EventSource(`/api/chat?message=${encodeURIComponent(message)}`);
+            let currentMessageDiv;
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
+            eventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.error) {
+                    console.error('Server error:', data.error);
+                    appendMessage('Error: ' + data.error, false);
+                    eventSource.close();
+                    return;
+                }
+
+                if (data.chunk) {
+                    if (!currentMessageDiv) {
+                        currentMessageDiv = document.createElement('div');
+                        currentMessageDiv.className = 'message ai-message';
+                        messageContainer.appendChild(currentMessageDiv);
+                    }
+                    currentMessageDiv.textContent += data.chunk;
+                    messageContainer.scrollTop = messageContainer.scrollHeight;
+                }
+
+                if (data.message_id) {
+                    // Final message received, close the connection
+                    eventSource.close();
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                console.error('EventSource error:', error);
+                eventSource.close();
+                appendMessage('Error: Connection lost. Please try again.', false);
+            };
 
             // Remove typing indicator
             typingIndicator.remove();
-
-            const data = await response.json();
-            appendMessage(data.response, false);
-            
-            if (data.error) {
-                console.error('Server error:', data.error);
-                appendMessage('Error: ' + data.error, false);
-                return;
-            }
             
             // Handle audio response if voice is enabled
             if (voiceEnabled) {

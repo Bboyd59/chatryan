@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, jsonify, request, send_file, sessi
 import PyPDF2
 from flask_login import login_required, current_user
 from models import Chat, Message, User, KnowledgeBase, db
-from claude_api import get_claude_response
+from openai_api import get_openai_response
 import elevenlabs_api
 import io
 import os
@@ -87,22 +87,31 @@ def process_message():
         db.session.add(user_message)
         db.session.commit()
         
-        # Get AI response
-        ai_response = get_claude_response(message)
-        
-        # Ensure we have a string response before saving to database
-        if isinstance(ai_response, str):
-            # Save AI message
-            ai_message = Message(chat_id=chat.id, content=ai_response, is_user=False)
+        def generate_streaming_response():
+            response = get_openai_response(message, stream=True)
+            if not response:
+                yield 'data: {"error": "Failed to get response from AI"}\n\n'
+                return
+
+            full_response = ""
+            for chunk in response:
+                if chunk.choices[0].delta.content is not None:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    yield f'data: {{"chunk": {json.dumps(content)}}}\n\n'
+            
+            # Save the complete message to database after streaming
+            ai_message = Message(chat_id=chat.id, content=full_response, is_user=False)
             db.session.add(ai_message)
             db.session.commit()
-        else:
-            raise ValueError("Invalid response format from AI")
+            
+            # Send the message ID as the final chunk
+            yield f'data: {{"message_id": {ai_message.id}}}\n\n'
         
-        return jsonify({
-            'response': ai_response,
-            'message_id': ai_message.id
-        })
+        return Response(
+            generate_streaming_response(),
+            mimetype='text/event-stream'
+        )
         
     except Exception as e:
         print(f"Error processing message: {str(e)}")
