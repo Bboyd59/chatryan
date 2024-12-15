@@ -1,6 +1,5 @@
 import os
-import anthropic
-from anthropic import Anthropic
+from openai import OpenAI
 from models import KnowledgeBase, db
 
 def search_knowledge_base(query):
@@ -22,34 +21,27 @@ def get_claude_response(message):
         # Search knowledge base for relevant information
         knowledge_context = search_knowledge_base(message)
         
-        client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         
         # Create the message
-        response = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+        response = client.chat.completions.create(
+            model="gpt-4",
             max_tokens=1000,
             temperature=0.7,
-            system="You are Aron Home Loans' AI mortgage assistant, powered by advanced technology to help clients navigate the home loan process. Your expertise covers all aspects of mortgages, including conventional loans, FHA, VA, refinancing, and current market rates. Your communication style is professional yet approachable, making complex mortgage concepts easy to understand. You provide accurate, up-to-date information about Aron Home Loans' services while maintaining a helpful and patient demeanor. For specific rate quotes or personal financial advice, you appropriately direct clients to contact Aron Jimenez directly at 951-420-6511. You're knowledgeable about the California housing market and Aron Home Loans' specialty areas.",
             messages=[
                 {
-                    "role": "user", 
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"""Consider this knowledge base context if relevant:\n{knowledge_context}\n\nUser Question: {message}\n\nKeep your response brief and energetic - aim for 2-3 short sentences that get right to the point while maintaining your friendly style."""
-                        }
-                    ]
+                    "role": "system",
+                    "content": "You are Aron Home Loans' AI mortgage assistant, powered by advanced technology to help clients navigate the home loan process. Your expertise covers all aspects of mortgages, including conventional loans, FHA, VA, refinancing, and current market rates. Your communication style is professional yet approachable, making complex mortgage concepts easy to understand. You provide accurate, up-to-date information about Aron Home Loans' services while maintaining a helpful and patient demeanor. For specific rate quotes or personal financial advice, you appropriately direct clients to contact Aron Jimenez directly at 951-420-6511. You're knowledgeable about the California housing market and Aron Home Loans' specialty areas."
+                },
+                {
+                    "role": "user",
+                    "content": f"Consider this knowledge base context if relevant:\n{knowledge_context}\n\nUser Question: {message}\n\nKeep your response brief and energetic - aim for 2-3 short sentences that get right to the point while maintaining your friendly style."
                 }
             ]
         )
         
-        # Extract the text from the response content
-        if isinstance(response.content, list):
-            # Handle case where content is a list of blocks
-            return response.content[0].text
-        else:
-            # Handle case where content is a single block
-            return response.content.text
+        # Extract the text from the response
+        return response.choices[0].message.content
         
     except Exception as e:
         print(f"Error calling Claude API: {str(e)}")
