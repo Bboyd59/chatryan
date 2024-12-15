@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageContainer.scrollTop = messageContainer.scrollHeight;
 
         try {
-            // Create EventSource for streaming response
+            // First send the message
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
@@ -140,40 +140,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            // Remove the existing EventSource if any
-            if (window.currentEventSource) {
-                window.currentEventSource.close();
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            // Create new EventSource for streaming response
+            // Create EventSource for streaming response
             const eventSource = new EventSource('/api/chat');
             window.currentEventSource = eventSource;
             let currentMessageDiv;
 
             eventSource.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                
-                if (data.error) {
-                    console.error('Server error:', data.error);
-                    appendMessage('Error: ' + data.error, false);
-                    eventSource.close();
-                    return;
-                }
-
-                if (data.chunk) {
-                    if (!currentMessageDiv) {
-                        currentMessageDiv = document.createElement('div');
-                        currentMessageDiv.className = 'message ai-message';
-                        messageContainer.appendChild(currentMessageDiv);
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.error) {
+                        console.error('Server error:', data.error);
+                        appendMessage('Error: ' + data.error, false);
+                        eventSource.close();
+                        return;
                     }
-                    currentMessageDiv.textContent += data.chunk;
-                    messageContainer.scrollTop = messageContainer.scrollHeight;
-                }
 
-                if (data.message_id) {
-                    // Final message received, close the connection
+                    if (data.chunk) {
+                        if (!currentMessageDiv) {
+                            currentMessageDiv = document.createElement('div');
+                            currentMessageDiv.className = 'message ai-message';
+                            messageContainer.appendChild(currentMessageDiv);
+                        }
+                        currentMessageDiv.textContent += data.chunk;
+                        messageContainer.scrollTop = messageContainer.scrollHeight;
+                    }
+
+                    if (data.message_id) {
+                        // Final message received, close the connection
+                        eventSource.close();
+                        delete window.currentEventSource;
+                    }
+                } catch (error) {
+                    console.error('Error parsing message:', error);
                     eventSource.close();
-                    delete window.currentEventSource;
                 }
             };
 
@@ -186,12 +190,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            eventSource.onerror = (error) => {
-                console.error('EventSource error:', error);
-                eventSource.close();
-                appendMessage('Error: Connection lost. Please try again.', false);
-            };
-
+        } catch (error) {
+            console.error('Error:', error);
+            appendMessage('Error: Failed to send message. Please try again.', false);
+        } finally {
             // Remove typing indicator
             typingIndicator.remove();
             
@@ -231,11 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     appendMessage('Voice response not available. Please try again.', false);
                 }
             }
-        } catch (error) {
-            console.error('Error:', error);
-            // Remove typing indicator
-            typingIndicator.remove();
-            appendMessage('Sorry, there was an error processing your message.', false);
         }
     });
 

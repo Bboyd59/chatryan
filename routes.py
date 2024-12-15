@@ -15,9 +15,15 @@ main_bp = Blueprint('main', __name__)
 def chat():
     return render_template('chat.html')
 
-@main_bp.route('/api/chat', methods=['POST'])
+@main_bp.route('/api/chat', methods=['POST', 'GET'])
 @login_required
 def process_message():
+    if request.method == 'GET':
+        return Response(
+            generate_streaming_response(),
+            mimetype='text/event-stream'
+        )
+    
     data = request.json
     message = data.get('message')
     
@@ -28,9 +34,13 @@ def process_message():
         db.session.add(chat)
         db.session.commit()
     
+    # Store chat_id in session for streaming context
+    session['current_chat_id'] = chat.id
+    
     # Save user message
     user_message = Message(chat_id=chat.id, content=message, is_user=True)
     db.session.add(user_message)
+    db.session.commit()
     
     # Check if voice mode is enabled
     voice_enabled = request.json.get('voice_enabled', False)
@@ -90,6 +100,30 @@ def process_message():
         
         def generate_streaming_response():
             try:
+                # Get the chat_id from session
+                chat_id = session.get('current_chat_id')
+                if not chat_id:
+                    yield f'data: {json.dumps({"error": "No active chat session"})}\n\n'
+                    return
+
+                # Get the last user message for this chat
+                with db.session.begin():
+                    chat = Chat.query.get(chat_id)
+                    if not chat:
+                        yield f'data: {json.dumps({"error": "Chat not found"})}\n\n'
+                        return
+                    
+                    last_message = Message.query.filter_by(
+                        chat_id=chat_id, 
+                        is_user=True
+                    ).order_by(Message.created_at.desc()).first()
+                    
+                    if not last_message:
+                        yield f'data: {json.dumps({"error": "No message found"})}\n\n'
+                        return
+                    
+                    message = last_message.content
+
                 stream = get_openai_response(message, stream=True)
                 if not stream:
                     yield f'data: {json.dumps({"error": "Failed to get response from AI"})}\n\n'
@@ -104,12 +138,12 @@ def process_message():
                 
                 if full_response:
                     # Save the complete message to database after streaming
-                    ai_message = Message(chat_id=chat.id, content=full_response, is_user=False)
-                    db.session.add(ai_message)
-                    db.session.commit()
-                    
-                    # Send the message ID as the final chunk
-                    yield f'data: {json.dumps({"message_id": ai_message.id})}\n\n'
+                    with db.session.begin():
+                        ai_message = Message(chat_id=chat_id, content=full_response, is_user=False)
+                        db.session.add(ai_message)
+                        db.session.commit()
+                        # Send the message ID as the final chunk
+                        yield f'data: {json.dumps({"message_id": ai_message.id})}\n\n'
                 else:
                     yield f'data: {json.dumps({"error": "No response content received"})}\n\n'
             except Exception as e:
