@@ -128,78 +128,69 @@ document.addEventListener('DOMContentLoaded', () => {
         messageContainer.scrollTop = messageContainer.scrollHeight;
 
         try {
-            // Create message container for streaming response
-            const messageContainer = document.createElement('div');
-            messageContainer.className = 'message ai-message';
-            document.querySelector('.messages').appendChild(messageContainer);
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    message,
+                    voice_enabled: voiceEnabled 
+                })
+            });
 
-            const eventSource = new EventSource(`/api/chat?${new URLSearchParams({
-                message: encodeURIComponent(message),
-                voice_enabled: voiceEnabled
-            })}`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
 
-            let fullResponse = '';
+            // Remove typing indicator
+            typingIndicator.remove();
 
-            eventSource.onmessage = (event) => {
-                // Remove typing indicator
-                typingIndicator.remove();
-
-                const data = JSON.parse(event.data);
-                
-                if (data.error) {
-                    console.error('Server error:', data.error);
-                    messageContainer.textContent = 'Error: ' + data.error;
-                    eventSource.close();
-                    return;
-                }
-
-                if (data.chunk) {
-                    fullResponse += data.chunk;
-                    try {
-                        messageContainer.innerHTML = marked.parse(fullResponse, {
-                            breaks: true,
-                            gfm: true,
-                            sanitize: false
-                        });
-                    } catch (error) {
-                        console.error('Markdown parsing error:', error);
-                        messageContainer.textContent = fullResponse;
-                    }
-                    messageContainer.scrollIntoView({ behavior: 'smooth' });
-                }
-
-                if (data.audio) {
+            const data = await response.json();
+            appendMessage(data.response, false);
+            
+            if (data.error) {
+                console.error('Server error:', data.error);
+                appendMessage('Error: ' + data.error, false);
+                return;
+            }
+            
+            // Handle audio response if voice is enabled
+            if (voiceEnabled) {
+                if (data.has_audio && data.audio) {
                     console.log('Playing audio response...');
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     const audioElement = new Audio('data:audio/mpeg;base64,' + data.audio);
                     
+                    // Create source node
                     const source = audioContext.createMediaElementSource(audioElement);
-                    const gainNode = audioContext.createGain();
-                    gainNode.gain.value = 1.0;
                     
+                    // Create gain node for volume control
+                    const gainNode = audioContext.createGain();
+                    gainNode.gain.value = 1.0; // Set initial volume
+                    
+                    // Connect nodes
                     source.connect(gainNode);
                     gainNode.connect(audioContext.destination);
                     
+                    // Play audio
                     audioElement.play().catch(error => {
                         console.error('Error playing audio:', error);
+                        appendMessage('Error playing audio response. Please try again.', false);
                     });
                     
+                    // Update UI to show audio is playing
                     voiceToggle.classList.add('playing');
+                    
+                    // Remove playing class when audio ends
                     audioElement.addEventListener('ended', () => {
                         voiceToggle.classList.remove('playing');
                     });
+                } else {
+                    console.log('No audio response available');
+                    appendMessage('Voice response not available. Please try again.', false);
                 }
-
-                if (event.data === '[DONE]') {
-                    eventSource.close();
-                }
-            };
-
-            eventSource.onerror = (error) => {
-                console.error('EventSource error:', error);
-                messageContainer.textContent = 'Error: Connection lost. Please try again.';
-                eventSource.close();
-            };
+            }
         } catch (error) {
             console.error('Error:', error);
             // Remove typing indicator

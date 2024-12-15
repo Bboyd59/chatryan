@@ -18,15 +18,14 @@ def search_knowledge_base(query):
     return "\n".join(relevant_info)
 
 def get_claude_response(message):
-    """Get a streaming response from Claude API"""
     try:
         # Search knowledge base for relevant information
         knowledge_context = search_knowledge_base(message)
         
         client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         
-        # Create the streaming message
-        with client.messages.stream(
+        # Create the message
+        response = client.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=1000,
             temperature=0.7,
@@ -42,10 +41,16 @@ def get_claude_response(message):
                     ]
                 }
             ]
-        ) as stream:
-            for text in stream.text_stream:
-                yield text
-                
+        )
+        
+        # Extract the text from the response content
+        if isinstance(response.content, list):
+            # Handle case where content is a list of blocks
+            return response.content[0].text
+        else:
+            # Handle case where content is a single block
+            return response.content.text
+        
     except Exception as e:
         print(f"Error calling Claude API: {str(e)}")
-        yield "I apologize, but I encountered an error processing your request. Please try again."
+        return "I apologize, but I encountered an error processing your request. Please try again."
