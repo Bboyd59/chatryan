@@ -110,6 +110,18 @@ def process_message():
             'error': 'Error processing your message. Please try again.'
         }), 500
 
+@main_bp.route('/admin/knowledge/<int:entry_id>', methods=['DELETE'])
+@login_required
+def delete_knowledge(entry_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+        
+    entry = KnowledgeBase.query.get_or_404(entry_id)
+    db.session.delete(entry)
+    db.session.commit()
+    
+    return jsonify({'message': 'Entry deleted successfully'})
+
 @main_bp.route('/admin/upload-knowledge', methods=['POST'])
 @login_required
 def upload_knowledge():
