@@ -19,6 +19,7 @@ def chat():
 def process_message():
     data = request.json
     message = data.get('message')
+    voice_enabled = request.json.get('voice_enabled', False)
     
     # Create new chat if needed
     chat = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).first()
@@ -30,85 +31,52 @@ def process_message():
     # Save user message
     user_message = Message(chat_id=chat.id, content=message, is_user=True)
     db.session.add(user_message)
+    db.session.commit()
     
-    # Check if voice mode is enabled
-    voice_enabled = request.json.get('voice_enabled', False)
+    # Create AI message placeholder
+    ai_message = Message(chat_id=chat.id, content="", is_user=False)
+    db.session.add(ai_message)
+    db.session.commit()
     
-    if voice_enabled:
+    def generate_streaming_response():
+        full_response = ""
         try:
-            print("Voice mode enabled, processing with ElevenLabs...")
+            for chunk in get_claude_response(message):
+                full_response += chunk
+                yield f"data: {json.dumps({'chunk': chunk, 'message_id': ai_message.id})}\n\n"
             
-            # Get AI response first
-            claude_response = get_claude_response(message)
-            
-            # Save the message
-            ai_message = Message(chat_id=chat.id, content=claude_response, is_user=False)
-            db.session.add(ai_message)
+            # Update the complete message in database
+            ai_message.content = full_response
             db.session.commit()
             
-            # Generate audio from the response using ElevenLabs
-            print("Generating audio response...")
-            conversation = elevenlabs_api.create_conversation()
-            if conversation:
-                response = elevenlabs_api.send_message(conversation, claude_response)
-                if response and response.get('audio'):
-                    audio = response['audio']
-                else:
-                    print("No audio response received")
-                    audio = None
-            else:
-                print("Failed to create conversation")
-                audio = None
-            
-            if audio:
-                # Convert audio bytes to base64 string
-                import base64
-                audio_b64 = base64.b64encode(audio).decode('utf-8')
-                
-                return jsonify({
-                    'response': claude_response,
-                    'has_audio': True,
-                    'message_id': ai_message.id,
-                    'audio': audio_b64
-                })
-            else:
-                return jsonify({
-                    'response': claude_response,
-                    'has_audio': False,
-                    'message_id': ai_message.id
-                })
-                
+            # Handle voice response if enabled
+            if voice_enabled:
+                try:
+                    print("Voice mode enabled, processing with ElevenLabs...")
+                    conversation = elevenlabs_api.create_conversation()
+                    if conversation:
+                        response = elevenlabs_api.send_message(conversation, full_response)
+                        if response and response.get('audio'):
+                            audio = response['audio']
+                            audio_b64 = base64.b64encode(audio).decode('utf-8')
+                            yield f"data: {json.dumps({'audio': audio_b64, 'message_id': ai_message.id})}\n\n"
+                except Exception as e:
+                    print(f"Error in voice processing: {str(e)}")
+                    
         except Exception as e:
-            print(f"Error in voice processing: {str(e)}")
-            return jsonify({'error': str(e)}), 500
+            print(f"Error in streaming response: {str(e)}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            
+        yield "data: [DONE]\n\n"
     
-    try:
-        # Save user message
-        db.session.add(user_message)
-        db.session.commit()
-        
-        # Get AI response
-        ai_response = get_claude_response(message)
-        
-        # Ensure we have a string response before saving to database
-        if isinstance(ai_response, str):
-            # Save AI message
-            ai_message = Message(chat_id=chat.id, content=ai_response, is_user=False)
-            db.session.add(ai_message)
-            db.session.commit()
-        else:
-            raise ValueError("Invalid response format from AI")
-        
-        return jsonify({
-            'response': ai_response,
-            'message_id': ai_message.id
-        })
-        
-    except Exception as e:
-        print(f"Error processing message: {str(e)}")
-        return jsonify({
-            'error': 'Error processing your message. Please try again.'
-        }), 500
+    return Response(
+        generate_streaming_response(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no'
+        }
+    )
 
 @main_bp.route('/admin/knowledge/<int:entry_id>', methods=['DELETE'])
 @login_required
