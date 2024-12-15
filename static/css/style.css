@@ -122,15 +122,16 @@ body {
 
 .app-logo {
     height: 80px;
-    width: auto;
+    width: 80px;
     transition: transform 0.3s ease;
-    filter: brightness(1.05) contrast(1.05);
+    filter: brightness(1) contrast(1);
     object-fit: contain;
+    border-radius: 50%;
 }
 
 .app-logo:hover {
     transform: scale(1.05);
-    filter: brightness(1.2) contrast(1.2);
+    filter: brightness(1.1) contrast(1.1);
 }
 
 * {
