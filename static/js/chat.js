@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
             recognition.stop();
             isRecording = false;
             voiceToggle.classList.remove('recording');
-            chatInput.placeholder = "Message iRyan...";
+            chatInput.placeholder = "Message A[i]ron Home Loans...";
         }
     });
 
@@ -39,14 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
         adjustTextareaHeight();
         isRecording = false;
         voiceToggle.classList.remove('recording');
-        chatInput.placeholder = "Message iRyan...";
+        chatInput.placeholder = "Message A[i]ron Home Loans...";
     };
 
     recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
         isRecording = false;
         voiceToggle.classList.remove('recording');
-        chatInput.placeholder = "Message iRyan...";
+        chatInput.placeholder = "Message A[i]ron Home Loans...";
     };
 
     // Auto-resize textarea
@@ -156,40 +156,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Handle audio response if voice is enabled
-            if (voiceEnabled) {
-                if (data.has_audio && data.audio) {
-                    console.log('Playing audio response...');
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const audioElement = new Audio('data:audio/mpeg;base64,' + data.audio);
-                    
-                    // Create source node
-                    const source = audioContext.createMediaElementSource(audioElement);
-                    
-                    // Create gain node for volume control
-                    const gainNode = audioContext.createGain();
-                    gainNode.gain.value = 1.0; // Set initial volume
-                    
-                    // Connect nodes
-                    source.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    
-                    // Play audio
-                    audioElement.play().catch(error => {
-                        console.error('Error playing audio:', error);
-                        appendMessage('Error playing audio response. Please try again.', false);
-                    });
-                    
-                    // Update UI to show audio is playing
-                    voiceToggle.classList.add('playing');
-                    
-                    // Remove playing class when audio ends
-                    audioElement.addEventListener('ended', () => {
-                        voiceToggle.classList.remove('playing');
-                    });
-                } else {
-                    console.log('No audio response available');
-                    appendMessage('Voice response not available. Please try again.', false);
-                }
+            if (voiceEnabled && data.has_audio && data.audio) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const audioElement = new Audio('data:audio/mpeg;base64,' + data.audio);
+                
+                // Create source node
+                const source = audioContext.createMediaElementSource(audioElement);
+                
+                // Create gain node for volume control
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 1.0; // Set initial volume
+                
+                // Connect nodes
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Play audio
+                audioElement.play().catch(error => {
+                    console.error('Error playing audio:', error);
+                    appendMessage('Error playing audio response. Please try again.', false);
+                });
+                
+                // Update UI to show audio is playing
+                voiceToggle.classList.add('playing');
+                
+                // Remove playing class when audio ends
+                audioElement.addEventListener('ended', () => {
+                    voiceToggle.classList.remove('playing');
+                });
             }
         } catch (error) {
             console.error('Error:', error);
